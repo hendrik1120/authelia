@@ -42,7 +42,7 @@ const SecondFactorMethodWebAuthn = function (props: Props) {
 
                 setState(WebAuthnTouchState.Failure);
 
-                console.error(new Error(translate(AssertionResultFailureString(result.result))));
+                console.error(new Error(AssertionResultFailureString(result.result)));
 
                 return;
             }

@@ -53,8 +53,8 @@ const WebAuthnCredentialItem = function (props: Props) {
                 tooltipInformationProblem={translate(
                     "There is an issue with this Credential to find out more click to display extended information for this WebAuthn Credential",
                 )}
-                tooltipEdit={translate("Edit this {{item}}", { item: translate("WebAuthn Credential") })}
-                tooltipDelete={translate("Remove this {{item}}", { item: translate("WebAuthn Credential") })}
+                tooltipEdit={translate("Edit this WebAuthn Credential")}
+                tooltipDelete={translate("Remove this WebAuthn Credential")}
                 handleInformation={handleInformation}
                 handleEdit={handleEdit}
                 handleDelete={handleDelete}

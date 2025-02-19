@@ -24,37 +24,19 @@ const OneTimePasswordDeleteDialog = function (props: Props) {
 
         if (response.data.status === "KO") {
             if (response.data.elevation) {
-                createErrorNotification(
-                    translate("You must be elevated to {{action}} a {{item}}", {
-                        action: translate("delete"),
-                        item: translate("One-Time Password"),
-                    }),
-                );
+                createErrorNotification(translate("You must be elevated to delete a One-Time Password"));
             } else if (response.data.authentication) {
                 createErrorNotification(
-                    translate("You must have a higher authentication level to {{action}} a {{item}}", {
-                        action: translate("delete"),
-                        item: translate("One-Time Password"),
-                    }),
+                    translate("You must have a higher authentication level to delete a One-Time Password"),
                 );
             } else {
-                createErrorNotification(
-                    translate("There was a problem {{action}} the {{item}}", {
-                        action: translate("deleting"),
-                        item: translate("One-Time Password"),
-                    }),
-                );
+                createErrorNotification(translate("There was a problem deleting the One-Time Password"));
             }
 
             return;
         }
 
-        createSuccessNotification(
-            translate("Successfully {{action}} the {{item}}", {
-                action: translate("deleted"),
-                item: translate("One-Time Password"),
-            }),
-        );
+        createSuccessNotification(translate("Successfully deleted the ne-Time Password"));
 
         props.handleClose();
     };
@@ -71,7 +53,7 @@ const OneTimePasswordDeleteDialog = function (props: Props) {
         <DeleteDialog
             open={props.open}
             handleClose={handleClose}
-            title={translate("Remove {{item}}", { item: translate("One-Time Password") })}
+            title={translate("Remove One-Time Password")}
             text={translate("Are you sure you want to remove the One-Time Password from your account")}
         />
     );

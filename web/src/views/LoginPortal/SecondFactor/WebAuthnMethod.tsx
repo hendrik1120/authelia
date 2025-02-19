@@ -57,7 +57,7 @@ const WebAuthnMethod = function (props: Props) {
 
                 setState(WebAuthnTouchState.Failure);
 
-                onSignInErrorCallback(new Error(translate(AssertionResultFailureString(result.result))));
+                onSignInErrorCallback(new Error(AssertionResultFailureString(result.result)));
 
                 return;
             }

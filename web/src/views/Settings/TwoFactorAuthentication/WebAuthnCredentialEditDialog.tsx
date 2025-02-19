@@ -56,44 +56,26 @@ const WebAuthnCredentialEditDialog = function (props: Props) {
 
         if (response.data.status === "KO") {
             if (response.data.elevation) {
-                createErrorNotification(
-                    translate("You must be elevated to {{action}} a {{item}}", {
-                        action: translate("update"),
-                        item: translate("WebAuthn Credential"),
-                    }),
-                );
+                createErrorNotification(translate("You must be elevated to update a WebAuthn Credential"));
             } else if (response.data.authentication) {
                 createErrorNotification(
-                    translate("You must have a higher authentication level to {{action}} a {{item}}", {
-                        action: translate("update"),
-                        item: translate("WebAuthn Credential"),
-                    }),
+                    translate("You must have a higher authentication level to update a WebAuthn Credential"),
                 );
             } else {
-                createErrorNotification(
-                    translate("There was a problem {{action}} the {{item}}", {
-                        action: translate("updating"),
-                        item: translate("WebAuthn Credential"),
-                    }),
-                );
+                createErrorNotification(translate("There was a problem updating the WebAuthn Credential"));
             }
 
             return;
         }
 
-        createSuccessNotification(
-            translate("Successfully {{action}} the {{item}}", {
-                action: translate("updated"),
-                item: translate("WebAuthn Credential"),
-            }),
-        );
+        createSuccessNotification(translate("Successfully updated the WebAuthn Credential"));
 
         handleReset();
     };
 
     return (
         <Dialog open={props.open} onClose={handleCancel}>
-            <DialogTitle>{translate("Edit {{item}}", { item: translate("WebAuthn Credential") })}</DialogTitle>
+            <DialogTitle>{translate("Edit WebAuthn Credential")}</DialogTitle>
             <DialogContent>
                 <DialogContentText>
                     {translate("Enter a new description for this WebAuthn Credential")}

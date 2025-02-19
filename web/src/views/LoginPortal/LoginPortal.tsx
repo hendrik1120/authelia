@@ -37,9 +37,6 @@ export interface Props {
     resetPasswordCustomURL: string;
 }
 
-const RedirectionErrorMessage =
-    "Redirection was determined to be unsafe and aborted ensure the redirection URL is correct";
-
 const LoginPortal = function (props: Props) {
     const location = useLocation();
     const redirectionURL = useQueryParam(RedirectionURL);
@@ -117,10 +114,18 @@ const LoginPortal = function (props: Props) {
                     if (res && res.ok) {
                         redirector(redirectionURL);
                     } else {
-                        createErrorNotification(translate(RedirectionErrorMessage));
+                        createErrorNotification(
+                            translate(
+                                "Redirection was determined to be unsafe and aborted ensure the redirection URL is correct",
+                            ),
+                        );
                     }
                 } catch {
-                    createErrorNotification(translate(RedirectionErrorMessage));
+                    createErrorNotification(
+                        translate(
+                            "Redirection was determined to be unsafe and aborted ensure the redirection URL is correct",
+                        ),
+                    );
                 }
 
                 return;

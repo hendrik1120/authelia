@@ -87,12 +87,7 @@ const WebAuthnCredentialRegisterDialog = function (props: Props) {
 
                 switch (response.status) {
                     case AttestationResult.Success:
-                        createSuccessNotification(
-                            translate("Successfully {{action}} the {{item}}", {
-                                action: translate("added"),
-                                item: translate("WebAuthn Credential"),
-                            }),
-                        );
+                        createSuccessNotification(translate("Successfully added the WebAuthn Credential"));
                         break;
                     case AttestationResult.Failure:
                         createErrorNotification(response.message);
@@ -101,7 +96,7 @@ const WebAuthnCredentialRegisterDialog = function (props: Props) {
 
                 return;
             } else {
-                createErrorNotification(translate(AttestationResultFailureString(result.result)));
+                createErrorNotification(AttestationResultFailureString(result.result));
                 setState(WebAuthnTouchState.Failure);
             }
         } catch (err) {
@@ -250,12 +245,10 @@ const WebAuthnCredentialRegisterDialog = function (props: Props) {
 
     return (
         <Dialog open={props.open} onClose={handleOnClose} maxWidth={"xs"} fullWidth={true}>
-            <DialogTitle>{translate("Register {{item}}", { item: translate("WebAuthn Credential") })}</DialogTitle>
+            <DialogTitle>{translate("Register WebAuthn Credential")}</DialogTitle>
             <DialogContent>
                 <DialogContentText sx={{ mb: 3 }}>
-                    {translate("This dialog handles registration of a {{item}}", {
-                        item: translate("WebAuthn Credential"),
-                    })}
+                    {translate("This dialog handles registration of a WebAuthn Credential")}
                 </DialogContentText>
                 <Grid container spacing={0} alignItems={"center"} justifyContent={"center"} textAlign={"center"}>
                     <Grid size={{ xs: 12 }}>
@@ -267,7 +260,7 @@ const WebAuthnCredentialRegisterDialog = function (props: Props) {
                                 } = {};
                                 return (
                                     <Step key={label} {...stepProps}>
-                                        <StepLabel {...labelProps}>{translate(label)}</StepLabel>
+                                        <StepLabel {...labelProps}>{label}</StepLabel>
                                     </Step>
                                 );
                             })}

@@ -4,6 +4,7 @@ import {
     PublicKeyCredentialRequestOptionsJSON,
     RegistrationResponseJSON,
 } from "@simplewebauthn/types";
+import { useTranslation } from "react-i18next";
 
 export interface PublicKeyCredentialCreationOptionsStatus {
     options?: PublicKeyCredentialCreationOptionsJSON;
@@ -55,46 +56,50 @@ export enum AssertionResult {
 }
 
 export function AssertionResultFailureString(result: AssertionResult) {
+    const { t: translate } = useTranslation();
     switch (result) {
         case AssertionResult.Success:
             return "";
         case AssertionResult.FailureUserConsent:
-            return "You cancelled the assertion request";
+            return translate("You cancelled the assertion request");
         case AssertionResult.FailureU2FFacetID:
-            return "The server responded with an invalid Facet ID for the URL";
+            return translate("The server responded with an invalid Facet ID for the URL");
         case AssertionResult.FailureSyntax:
-            return "The assertion challenge was rejected as malformed or incompatible by your browser";
+            return translate("The assertion challenge was rejected as malformed or incompatible by your browser");
         case AssertionResult.FailureWebAuthnNotSupported:
-            return "Your browser does not support the WebAuthn protocol";
+            return translate("Your browser does not support the WebAuthn protocol");
         case AssertionResult.FailureUnrecognized:
-            return "This device is not registered";
+            return translate("This device is not registered");
         case AssertionResult.FailureUnknownSecurity:
-            return "An unknown security error occurred";
+            return translate("An unknown security error occurred");
         case AssertionResult.FailureUnknown:
-            return "An unknown error occurred";
+            return translate("An unknown error occurred");
         default:
-            return "An unexpected error occurred";
+            return translate("An unexpected error occurred");
     }
 }
 
 export function AttestationResultFailureString(result: AttestationResult) {
+    const { t: translate } = useTranslation();
     switch (result) {
         case AttestationResult.FailureToken:
-            return "You must open the link from the same device and browser that initiated the registration process";
+            return translate(
+                "You must open the link from the same device and browser that initiated the registration process",
+            );
         case AttestationResult.FailureSupport:
-            return "Your browser does not appear to support the configuration";
+            return translate("Your browser does not appear to support the configuration");
         case AttestationResult.FailureSyntax:
-            return "The attestation challenge was rejected as malformed or incompatible by your browser";
+            return translate("The attestation challenge was rejected as malformed or incompatible by your browser");
         case AttestationResult.FailureWebAuthnNotSupported:
-            return "Your browser does not support the WebAuthn protocol";
+            return translate("Your browser does not support the WebAuthn protocol");
         case AttestationResult.FailureUserConsent:
-            return "You cancelled the attestation request";
+            return translate("You cancelled the attestation request");
         case AttestationResult.FailureUserVerificationOrResidentKey:
-            return "Your device does not support user verification or resident keys but this was required";
+            return translate("Your device does not support user verification or resident keys but this was required");
         case AttestationResult.FailureExcluded:
-            return "You have registered this device already";
+            return translate("You have registered this device already");
         case AttestationResult.FailureUnknown:
-            return "An unknown error occurred";
+            return translate("An unknown error occurred");
     }
 
     return "";

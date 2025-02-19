@@ -126,12 +126,7 @@ const OneTimePasswordRegisterDialog = function (props: Props) {
         setSuccess(true);
 
         setTimeout(() => {
-            createSuccessNotification(
-                translate("Successfully {{action}} the {{item}}", {
-                    action: translate("added"),
-                    item: translate("One-Time Password"),
-                }),
-            );
+            createSuccessNotification(translate("Successfully added the One-Time Password"));
 
             props.setClosed();
             resetStates();
@@ -527,12 +522,10 @@ const OneTimePasswordRegisterDialog = function (props: Props) {
 
     return (
         <Dialog open={props.open} onClose={handleOnClose} fullWidth={true}>
-            <DialogTitle>{translate("Register {{item}}", { item: translate("One-Time Password") })}</DialogTitle>
+            <DialogTitle>{translate("Register One-Time Password")}</DialogTitle>
             <DialogContent>
                 <DialogContentText sx={{ mb: 3 }}>
-                    {translate("This dialog handles registration of a {{item}}", {
-                        item: translate("One-Time Password"),
-                    })}
+                    {translate("This dialog handles registration of a One-Time Password")}
                 </DialogContentText>
                 <Grid container spacing={0} alignItems={"center"} justifyContent={"center"} textAlign={"center"}>
                     <Grid size={{ xs: 12 }}>
@@ -544,7 +537,7 @@ const OneTimePasswordRegisterDialog = function (props: Props) {
                                 } = {};
                                 return (
                                     <Step key={label} {...stepProps}>
-                                        <StepLabel {...labelProps}>{translate(label)}</StepLabel>
+                                        <StepLabel {...labelProps}>{label}</StepLabel>
                                     </Step>
                                 );
                             })}

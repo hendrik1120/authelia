@@ -139,7 +139,7 @@ const WebAuthnCredentialInformationDialog = function (props: Props) {
                         {" "}
                         <CopyButton
                             variant={"contained"}
-                            tooltip={translate("Click to copy the {{value}}", { value: "KID" })}
+                            tooltip={translate("Click to copy the KID")}
                             value={props.credential.kid.toString()}
                             fullWidth={false}
                             childrenCopied={translate("Copied")}
@@ -148,7 +148,7 @@ const WebAuthnCredentialInformationDialog = function (props: Props) {
                         </CopyButton>
                         <CopyButton
                             variant={"contained"}
-                            tooltip={translate("Click to copy the {{value}}", { value: translate("Public Key") })}
+                            tooltip={translate("Click to copy the Public Key")}
                             value={props.credential.public_key.toString()}
                             fullWidth={false}
                             childrenCopied={translate("Copied")}

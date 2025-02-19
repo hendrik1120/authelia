@@ -19,7 +19,7 @@ const TwoFactorAuthenticationOptionsMethodsRadioGroup = function (props: Props) 
 
     return (
         <FormControl>
-            <FormLabel>{translate(props.name)}</FormLabel>
+            <FormLabel>{props.name}</FormLabel>
             <RadioGroup value={toMethod2FA(props.method)} onChange={props.handleMethodChanged} row>
                 {props.methods.map((value, index) => {
                     const v = toMethod2FA(value);

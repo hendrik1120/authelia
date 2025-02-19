@@ -103,7 +103,7 @@ const TwoFactorAuthenticationOptionsPanel = function (props: Props) {
                                     <Grid size={{ xs: 4 }}>
                                         <TwoFactorAuthenticationOptionsMethodsRadioGroup
                                             id={"account"}
-                                            name={"Default Method"}
+                                            name={translate("Default Method")}
                                             method={method}
                                             methods={methods}
                                             handleMethodChanged={handleMethodAccountChanged}
@@ -114,7 +114,7 @@ const TwoFactorAuthenticationOptionsPanel = function (props: Props) {
                                     <Grid size={{ xs: 4 }}>
                                         <TwoFactorAuthenticationOptionsMethodsRadioGroup
                                             id={"local"}
-                                            name={"Default Method (Browser)"}
+                                            name={translate("Default Method (Browser)")}
                                             method={localStorageMethod}
                                             methods={methods}
                                             handleMethodChanged={handleMethodBrowserChanged}

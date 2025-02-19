@@ -79,39 +79,25 @@ const TwoFactorAuthenticationView = function (props: Props) {
 
     useEffect(() => {
         if (fetchConfigurationError) {
-            createErrorNotification(
-                translate("There was an issue retrieving the {{item}}", { item: translate("global configuration") }),
-            );
+            createErrorNotification(translate("There was an issue retrieving the global configuration"));
         }
     }, [fetchConfigurationError, createErrorNotification, translate]);
 
     useEffect(() => {
         if (fetchUserInfoError) {
-            createErrorNotification(
-                translate("There was an issue retrieving the {{item}}", {
-                    item: translate("user preferences"),
-                }),
-            );
+            createErrorNotification(translate("There was an issue retrieving the user preferences"));
         }
     }, [fetchUserInfoError, createErrorNotification, translate]);
 
     useEffect(() => {
         if (fetchUserTOTPConfigError) {
-            createErrorNotification(
-                translate("There was an issue retrieving the {{item}}", {
-                    item: translate("One-Time Password configuration"),
-                }),
-            );
+            createErrorNotification(translate("There was an issue retrieving the One-Time Password configuration"));
         }
     }, [fetchUserTOTPConfigError, createErrorNotification, translate]);
 
     useEffect(() => {
         if (fetchUserWebAuthnCredentialsError) {
-            createErrorNotification(
-                translate("There was an issue retrieving the {{item}}", {
-                    item: translate("WebAuthn Credentials"),
-                }),
-            );
+            createErrorNotification(translate("There was an issue retrieving the WebAuthn Credentials"));
         }
     }, [fetchUserWebAuthnCredentialsError, createErrorNotification, translate]);
 

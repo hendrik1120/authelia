@@ -23,7 +23,7 @@ const Brand = function (props: Props) {
         <Grid container size={{ xs: 12 }} alignItems="center" justifyContent="center">
             <Grid size={{ xs: 4 }}>
                 <Link href={url} target="_blank" underline="hover" className={styles.links}>
-                    {translate("Powered by")} Authelia
+                    {translate("Powered by Authelia")}
                 </Link>
             </Grid>
             {privacyEnabled ? (

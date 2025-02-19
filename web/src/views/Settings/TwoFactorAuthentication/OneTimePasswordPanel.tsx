@@ -196,9 +196,7 @@ const OneTimePasswordPanel = function (props: Props) {
                         <Tooltip
                             title={
                                 !registered
-                                    ? translate("Click to add a {{item}} to your account", {
-                                          item: translate("One-Time Password"),
-                                      })
+                                    ? translate("Click to add a One-Time Password to your account")
                                     : translate("You can only register a single One-Time Password")
                             }
                         >

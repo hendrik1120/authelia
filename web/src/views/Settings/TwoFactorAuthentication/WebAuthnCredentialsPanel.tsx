@@ -241,11 +241,7 @@ const WebAuthnCredentialsPanel = function (props: Props) {
                         <Typography variant="h5">{translate("WebAuthn Credentials")}</Typography>
                     </Grid>
                     <Grid size={{ xs: 4, md: 2 }}>
-                        <Tooltip
-                            title={translate("Click to add a {{item}} to your account", {
-                                item: translate("WebAuthn Credential"),
-                            })}
-                        >
+                        <Tooltip title={translate("Click to add a WebAuthn Credential to your account")}>
                             <Button
                                 id={"webauthn-credential-add"}
                                 variant="outlined"
