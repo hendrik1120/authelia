@@ -21,9 +21,9 @@ seo:
 ## Tested Versions
 
 * [Authelia]
-    * [v4.38.6](https://github.com/authelia/authelia/releases/tag/v4.38.6)
+  * [v4.38.17](https://github.com/authelia/authelia/releases/tag/v4.38.17)
 * [Jellyfin]
-    * [10.8.13](https://github.com/jellyfin/jellyfin/releases/tag/v10.8.13)
+  * [10.10.6](https://github.com/jellyfin/jellyfin/releases/tag/v10.10.6)
 
 {{% oidc-common %}}
 
@@ -72,13 +72,13 @@ identity_providers:
 
 ### Application
 
-_**Important Note:** This configuration assumes [Jellyfin] administrators are part of the `jellyfin-admins` group, and
-[Jellyfin] users are part of the `jellyfin-users` group. Depending on your specific group configuration, you will have
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+This configuration assumes [Jellyfin](https://jellyfin.org/) administrators are part of the `jellyfin-admins` group, and
+[Jellyfin](https://jellyfin.org/) users are part of the `jellyfin-users` group. Depending on your specific group configuration, you will have
 to adapt the `AdminRoles` and `Roles` nodes respectively. Alternatively you may elect to create a new authorization
-policy in [provider authorization policies] then utilize that policy as the [client authorization policy]._
+policy in [provider authorization policies](../../../configuration/identity-providers/openid-connect/provider.md#authorization_policies) then utilize that policy as the [client authorization policy](./../../configuration/identity-providers/openid-connect/clients.md#authorization_policy).
+{{< /callout >}}
 
-[client authorization policy]: ../../../configuration/identity-providers/openid-connect/clients.md#authorization_policy
-[provider authorization policies]: ../../../configuration/identity-providers/openid-connect/provider.md#authorization_policies
 
 To configure [Jellyfin] to utilize Authelia as an [OpenID Connect 1.0] Provider:
 
@@ -114,7 +114,7 @@ To configure [Jellyfin] to utilize Authelia as an [OpenID Connect 1.0] Provider:
 
 15. Add a provider with the following settings:
 
-    1. Name of the OID Provider: `Authelia`
+    1. Name of the OID Provider: `authelia`
 
     2. OID Endpoint: `https://{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}`
 
@@ -141,6 +141,10 @@ To configure [Jellyfin] to utilize Authelia as an [OpenID Connect 1.0] Provider:
 16. All other options may remain unchecked or unconfigured.
 
 17. Click `Save`.
+
+18. To log in visit `https://jellyfin.{{< sitevar name="domain" nojs="example.com" >}}/sso/OID/start/authelia`.
+
+19. Follow the [Jellyfin SSO Plugin] documentation on how to create a button on the [Jellyfin] login page.
 
 Alternatively you can utilize the following configuration XML:
 

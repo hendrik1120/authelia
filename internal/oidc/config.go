@@ -16,16 +16,17 @@ import (
 	"authelia.com/provider/oauth2/handler/pkce"
 	"authelia.com/provider/oauth2/i18n"
 	"authelia.com/provider/oauth2/token/jwt"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/authelia/authelia/v4/internal/configuration/schema"
+	"github.com/authelia/authelia/v4/internal/logging"
+	"github.com/authelia/authelia/v4/internal/model"
 	"github.com/authelia/authelia/v4/internal/templates"
 	"github.com/authelia/authelia/v4/internal/utils"
 )
 
-func NewConfig(config *schema.IdentityProvidersOpenIDConnect, signer jwt.Signer, templates *templates.Provider) (c *Config) {
+func NewConfig(config *schema.IdentityProvidersOpenIDConnect, issuer *Issuer, templates *templates.Provider) (c *Config) {
 	c = &Config{
-		Signer:                     signer,
 		GlobalSecret:               []byte(utils.HashSHA256FromString(config.HMACSecret)),
 		SendDebugMessagesToClients: config.EnableClientDebugMessages,
 		MinParameterEntropy:        config.MinimumParameterEntropy,
@@ -46,22 +47,28 @@ func NewConfig(config *schema.IdentityProvidersOpenIDConnect, signer jwt.Signer,
 			Enable:                       config.Discovery.JWTResponseAccessTokens,
 			EnableStatelessIntrospection: config.EnableJWTAccessTokenStatelessIntrospection,
 		},
-		JWTSecuredAuthorizationLifespan:                    config.Lifespans.JWTSecuredAuthorization,
-		RevokeRefreshTokensExplicit:                        true,
+		Strategy:                        StrategyConfig{},
+		JWTSecuredAuthorizationLifespan: config.Lifespans.JWTSecuredAuthorization,
+		RevokeRefreshTokensExplicit:     true,
 		EnforceRevokeFlowRevokeRefreshTokensExplicitClient: true,
 		ClientCredentialsFlowImplicitGrantRequested:        true,
 		Templates: templates,
 	}
 
+	c.Strategy.JWT = &jwt.DefaultStrategy{
+		Config: c,
+		Issuer: issuer,
+	}
+
 	if config.Discovery.JWTResponseAccessTokens {
-		c.Strategy.Core = oauth2.NewCoreStrategy(c, "authelia_%s_", signer)
+		c.Strategy.Core = oauth2.NewCoreStrategy(c, "authelia_%s_", c.Strategy.JWT)
 	} else {
 		c.Strategy.Core = oauth2.NewCoreStrategy(c, "authelia_%s_", nil)
 	}
 
 	c.Strategy.OpenID = &openid.DefaultStrategy{
-		Signer: signer,
-		Config: c,
+		Strategy: c.Strategy.JWT,
+		Config:   c,
 	}
 
 	return c
@@ -69,8 +76,6 @@ func NewConfig(config *schema.IdentityProvidersOpenIDConnect, signer jwt.Signer,
 
 // Config is an implementation of the oauthelia2.Configurator.
 type Config struct {
-	Signer jwt.Signer
-
 	// GlobalSecret is the global secret used to sign and verify signatures.
 	GlobalSecret []byte
 
@@ -122,6 +127,10 @@ type Config struct {
 	Templates *templates.Provider
 }
 
+func (c *Config) GetJWTStrategy(ctx context.Context) jwt.Strategy {
+	return c.Strategy.JWT
+}
+
 type RFC8693Config struct {
 	TokenTypes                map[string]oauthelia2.RFC8693TokenType
 	DefaultRequestedTokenType string
@@ -147,7 +156,8 @@ type StrategyConfig struct {
 	OpenID               openid.OpenIDConnectTokenStrategy
 	Audience             oauthelia2.AudienceMatchingStrategy
 	Scope                oauthelia2.ScopeStrategy
-	JWKSFetcher          oauthelia2.JWKSFetcherStrategy
+	JWT                  jwt.Strategy
+	JWKSFetcher          jwt.JWKSFetcherStrategy
 	ClientAuthentication oauthelia2.ClientAuthenticationStrategy
 }
 
@@ -219,14 +229,14 @@ type ProofKeyCodeExchangeConfig struct {
 
 // LoadHandlers reloads the handlers based on the current configuration.
 func (c *Config) LoadHandlers(store *Store) {
-	validator := openid.NewOpenIDConnectRequestValidator(c.Signer, c)
+	validator := openid.NewOpenIDConnectRequestValidator(c.Strategy.JWT, c)
 
 	var statelessJWT any
 
 	if c.JWTAccessToken.Enable && c.JWTAccessToken.EnableStatelessIntrospection {
 		statelessJWT = &oauth2.StatelessJWTValidator{
-			Signer: c.Signer,
-			Config: c,
+			Strategy: c.Strategy.JWT,
+			Config:   c,
 		}
 	}
 
@@ -258,6 +268,7 @@ func (c *Config) LoadHandlers(store *Store) {
 			TokenRevocationStorage: store,
 			Config:                 c,
 		},
+
 		&openid.OpenIDConnectExplicitHandler{
 			IDTokenHandleHelper: &openid.IDTokenHandleHelper{
 				IDTokenStrategy: c.Strategy.OpenID,
@@ -304,29 +315,33 @@ func (c *Config) LoadHandlers(store *Store) {
 			},
 			Config: c,
 		},
+
 		statelessJWT,
 		&oauth2.CoreValidator{
 			CoreStrategy: c.Strategy.Core,
 			CoreStorage:  store,
 			Config:       c,
 		},
+
 		&oauth2.TokenRevocationHandler{
 			AccessTokenStrategy:    c.Strategy.Core,
 			RefreshTokenStrategy:   c.Strategy.Core,
 			TokenRevocationStorage: store,
 			Config:                 c,
 		},
+
 		&pkce.Handler{
 			AuthorizeCodeStrategy: c.Strategy.Core,
 			Storage:               store,
 			Config:                c,
 		},
+
 		&par.PushedAuthorizeHandler{
 			Storage: store,
 			Config:  c,
 		},
 
-		// Response Mode Handling.
+		// Response Modes Handling.
 		&oauthelia2.DefaultResponseModeHandler{
 			Config: c,
 		},
@@ -346,6 +361,14 @@ func (c *Config) LoadHandlers(store *Store) {
 
 		if h, ok := handler.(oauthelia2.AuthorizeEndpointHandler); ok {
 			x.AuthorizeEndpoint.Append(h)
+		}
+
+		if h, ok := handler.(oauthelia2.RFC8628DeviceAuthorizeEndpointHandler); ok {
+			x.RFC8628DeviceAuthorizeEndpoint.Append(h)
+		}
+
+		if h, ok := handler.(oauthelia2.RFC8628UserAuthorizeEndpointHandler); ok {
+			x.RFC8628UserAuthorizeEndpoint.Append(h)
 		}
 
 		if h, ok := handler.(oauthelia2.TokenEndpointHandler); ok {
@@ -379,7 +402,7 @@ func (c *Config) LoadHandlers(store *Store) {
 // GetAllowedPrompts returns the allowed prompts.
 func (c *Config) GetAllowedPrompts(ctx context.Context) (prompts []string) {
 	if len(c.AllowedPrompts) == 0 {
-		c.AllowedPrompts = []string{PromptNone, PromptLogin, PromptConsent}
+		c.AllowedPrompts = []string{PromptNone, PromptLogin, PromptConsent, PromptSelectAccount}
 	}
 
 	return c.AllowedPrompts
@@ -452,7 +475,7 @@ func (c *Config) GetJWTScopeField(ctx context.Context) (field jwt.JWTScopeFieldE
 
 // GetIssuerFallback returns the issuer from the ctx or returns the fallback value.
 func (c *Config) GetIssuerFallback(ctx context.Context, fallback string) (issuer string) {
-	if octx, ok := ctx.(Context); ok {
+	if octx := c.GetContext(ctx); octx != nil {
 		if iss, err := octx.IssuerURL(); err == nil {
 			return iss.String()
 		}
@@ -481,9 +504,9 @@ func (c *Config) GetIntrospectionIssuer(ctx context.Context) (issuer string) {
 	return c.GetIssuerFallback(ctx, c.Issuers.Introspection)
 }
 
-// GetIntrospectionJWTResponseSigner returns jwt.Signer for Introspection JWT Responses.
-func (c *Config) GetIntrospectionJWTResponseSigner(ctx context.Context) jwt.Signer {
-	return c.Signer
+// GetIntrospectionJWTResponseStrategy returns jwt.Signer for Introspection JWT Responses.
+func (c *Config) GetIntrospectionJWTResponseStrategy(ctx context.Context) jwt.Strategy {
+	return c.Strategy.JWT
 }
 
 // GetDisableRefreshTokenValidation returns the disable refresh token validation flag.
@@ -500,9 +523,9 @@ func (c *Config) GetJWTSecuredAuthorizeResponseModeLifespan(ctx context.Context)
 	return c.JWTSecuredAuthorizationLifespan
 }
 
-// GetJWTSecuredAuthorizeResponseModeSigner returns jwt.Signer for JWT Secured Authorization Responses.
-func (c *Config) GetJWTSecuredAuthorizeResponseModeSigner(ctx context.Context) (signer jwt.Signer) {
-	return c.Signer
+// GetJWTSecuredAuthorizeResponseModeStrategy returns jwt.Signer for JWT Secured Authorization Responses.
+func (c *Config) GetJWTSecuredAuthorizeResponseModeStrategy(ctx context.Context) (strategy jwt.Strategy) {
+	return c.Strategy.JWT
 }
 
 // GetJWTSecuredAuthorizeResponseModeIssuer returns the issuer for JWT Secured Authorization Responses.
@@ -628,8 +651,7 @@ func (c *Config) GetSendDebugMessagesToClients(ctx context.Context) (send bool) 
 	return c.SendDebugMessagesToClients
 }
 
-// GetJWKSFetcherStrategy returns the JWKS fetcher strategy.
-func (c *Config) GetJWKSFetcherStrategy(ctx context.Context) (strategy oauthelia2.JWKSFetcherStrategy) {
+func (c *Config) GetJWKSFetcherStrategy(ctx context.Context) (strategy jwt.JWKSFetcherStrategy) {
 	if c.Strategy.JWKSFetcher == nil {
 		c.Strategy.JWKSFetcher = oauthelia2.NewDefaultJWKSFetcherStrategy()
 	}
@@ -662,22 +684,19 @@ func (c *Config) GetFormPostResponseWriter(ctx context.Context) oauthelia2.FormP
 	return oauthelia2.DefaultFormPostResponseWriter
 }
 
-// GetTokenURLs returns the token URL.
-func (c *Config) GetTokenURLs(ctx context.Context) (tokenURLs []string) {
-	return []string{c.getEndpointURL(ctx, EndpointPathToken, c.TokenURL)}
-}
-
 func (c *Config) getEndpointURL(ctx context.Context, path, fallback string) (endpointURL string) {
-	if octx, ok := ctx.(Context); ok {
-		switch issuerURL, err := octx.IssuerURL(); err {
-		case nil:
-			return strings.ToLower(issuerURL.JoinPath(path).String())
-		default:
-			return fallback
-		}
+	var octx Context
+
+	if octx = c.GetContext(ctx); octx == nil {
+		return fallback
 	}
 
-	return fallback
+	switch issuerURL, err := octx.IssuerURL(); err {
+	case nil:
+		return strings.ToLower(issuerURL.JoinPath(path).String())
+	default:
+		return fallback
+	}
 }
 
 // GetUseLegacyErrorFormat returns whether to use the legacy error format.
@@ -763,8 +782,28 @@ func (c *Config) GetEnforceRevokeFlowRevokeRefreshTokensExplicitClient(ctx conte
 	return c.EnforceRevokeFlowRevokeRefreshTokensExplicitClient
 }
 
-func (c *Config) GetTokenURL(ctx context.Context) (url string) {
-	return c.getEndpointURL(ctx, EndpointPathToken, c.TokenURL)
+func (c *Config) GetAllowedJWTAssertionAudiences(ctx context.Context) (audiences []string) {
+	var octx Context
+
+	if octx = c.GetContext(ctx); octx == nil {
+		return nil
+	}
+
+	var (
+		issuer *url.URL
+		err    error
+	)
+
+	if issuer, err = octx.IssuerURL(); err != nil {
+		logging.Logger().WithError(err).Error("Error retrieving issuer")
+		return nil
+	}
+
+	return []string{
+		issuer.String(),
+		issuer.JoinPath(EndpointPathToken).String(),
+		issuer.JoinPath(EndpointPathPushedAuthorizationRequest).String(),
+	}
 }
 
 func (c *Config) GetRFC8628CodeLifespan(ctx context.Context) time.Duration {
@@ -805,4 +844,18 @@ func (c *Config) GetDefaultRFC8693RequestedTokenType(ctx context.Context) string
 
 func (c *Config) GetEnforceJWTProfileAccessTokens(ctx context.Context) (enforce bool) {
 	return c.EnforceJWTProfileAccessTokens
+}
+
+func (c *Config) GetContext(ctx context.Context) (octx Context) {
+	var ok bool
+
+	if octx, ok = ctx.Value(model.CtxKeyAutheliaCtx).(Context); ok {
+		return octx
+	}
+
+	if octx, ok = ctx.(Context); ok {
+		return octx
+	}
+
+	return nil
 }

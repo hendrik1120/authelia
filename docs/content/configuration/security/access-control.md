@@ -17,10 +17,10 @@ seo:
   noindex: false # false (default) or true
 ---
 
-*__Important Note:__ This section does not apply to OpenID Connect 1.0. See the [Frequently Asked Questions] for more
-information.*
-
-[Frequently Asked Questions]: ../../integration/openid-connect/frequently-asked-questions.md#why-doesnt-the-access-control-configuration-work-with-openid-connect-10
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+This section does not apply to OpenID Connect 1.0. See the [Frequently Asked Questions](../../integration/openid-connect/frequently-asked-questions.md#why-doesnt-the-access-control-configuration-work-with-openid-connect-10) for more
+information.
+{{< /callout >}}
 
 ## Variables
 
@@ -35,12 +35,6 @@ Some of the values within this page can automatically be replaced with documenta
 ```yaml {title="configuration.yml"}
 access_control:
   default_policy: 'deny'
-  networks:
-  - name: 'internal'
-    networks:
-    - '10.0.0.0/8'
-    - '172.16.0.0/12'
-    - '192.168.0.0/18'
   rules:
   - domain: 'private.{{< sitevar name="domain" nojs="example.com" >}}'
     domain_regex: '^(\d+\-)?priv-img\.{{< sitevar name="domain" format="regex" nojs="example\.com" >}}$'
@@ -84,21 +78,6 @@ not wish to secure at all with Authelia should not be configured in your reverse
 Authelia at all for performance reasons.
 
 See the [policies] section for more information.
-
-### networks (global)
-
-{{< confkey type="list" required="no" >}}
-
-The main/global networks section contains a list of networks with a name label that can be reused in the
-[rules](#networks) section instead of redefining the same networks over and over again. This additionally makes
-complicated network related configuration a lot cleaner and easier to read.
-
-This section has two options, `name` and `networks`. Where the `networks` section is a list of IP addresses in CIDR
-notation and where `name` is a friendly name to label the collection of networks for reuse in the [networks] section of
-the [rules] section below.
-
-This configuration option *does nothing* by itself, it's only useful if you use these aliases in the [rules](#networks)
-section below.
 
 ### rules
 
@@ -174,7 +153,7 @@ access_control:
     policy: 'bypass'
 ```
 
-*Multiple domains matched. These rules will match either `apple.{{< sitevar name="domain" nojs="example.com" >}}` or `orange.{{< sitevar name="domain" nojs="example.com" >}}`. All rules in this
+*Multiple domains matched. These rules will match either `apple.{{< sitevar name="domain" nojs="example.com" >}}` or `banana.{{< sitevar name="domain" nojs="example.com" >}}`. All rules in this
 list are effectively the same rule just expressed in different ways.*
 
 ```yaml {title="configuration.yml"}
@@ -203,12 +182,16 @@ access_control:
 
 {{< confkey type="list(string)" required="yes" >}}
 
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+If you intend to use this criteria with a bypass rule please read [Rule Matching Concept 2](#rule-matching-concept-2-subject-criteria-requires-authentication).
+{{< /callout >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+To utilize regex you must escape it properly. See
+[regular expressions](../prologue/common.md#regular-expressions) for more information.
+{{< /callout >}}
+
 *__Required:__ This criteria and/or the [domain] criteria are required.*
-
-*__Important Note:__ If you intend to use this criteria with a bypass rule please read [Rule Matching Concept 2].*
-
-*__Important Note:__ to utilize regex you must escape it properly. See
-[regular expressions](../prologue/common.md#regular-expressions) for more information.*
 
 This criteria matches the domain name and has two methods of configuration, either as a single string or as a list of
 strings. When it's a list of strings the rule matches when __any__ of the domains in the list match the request domain.
@@ -258,8 +241,10 @@ take when a match is made.
 
 {{< confkey type="list(list(string))" required="no" >}}
 
-*__Note:__ this rule criteria __may not__ be used for the [bypass] policy the minimum required authentication level to
-identify the subject is [one_factor]. See [Rule Matching Concept 2] for more information.*
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This rule criteria __may not__ be used for the [bypass](#bypass) policy the minimum required authentication level to
+identify the subject is [one_factor](#one_factor). See [Rule Matching Concept 2](#rule-matching-concept-2-subject-criteria-requires-authentication) for more information.
+{{< /callout >}}
 
 This criteria matches identifying characteristics about the subject. Currently this is either user or groups the user
 belongs to. This allows you to effectively control exactly what each user is authorized to access or to specifically
@@ -360,13 +345,13 @@ access_control:
 
 #### networks
 
-{{< confkey type="list(string)" required="no" >}}
+{{< confkey type="list(string)" syntax="network" required="no" >}}
 
-This criteria is a list of values which can be an IP Address, network address range in CIDR notation, or an alias from
-the [global](#networks-global) section. It matches against the first address in the `X-Forwarded-For` header, or if there
-are none it will fall back to the IP address of the packet TCP source IP address. For this reason it's important for you
-to configure the proxy server correctly in order to accurately match requests with this criteria. *__Note:__ you may
-combine CIDR networks with the alias rules as you please.*
+These criteria consist of a list of values which can be an IP Address, network address range in CIDR notation, or a named
+[Network Definition](../definitions/network.md). It matches against the first address in the `X-Forwarded-For` header,
+or if there are none it will fall back to the IP address of the packet TCP source IP address. For this reason, it's
+important for you to configure the proxy server correctly to accurately match requests with these criteria.
+*__Note:__ you may combine CIDR networks with the alias rules as you please.*
 
 The main use case for this criteria is adjust the security requirements of a resource based on the location of a user.
 You can theoretically consider a specific network to be one of the factors involved in authentication, you can deny
@@ -388,14 +373,14 @@ for administrators to tune the security to their specific needs if desired.
 rules in this list are effectively the same rule just expressed in different ways.*
 
 ```yaml {title="configuration.yml"}
-access_control:
-  default_policy: 'two_factor'
-  networks:
-  - name: 'internal'
-    networks:
+definitions:
+  network:
+    internal:
       - '10.0.0.0/8'
       - '172.16.0.0/12'
       - '192.168.0.0/18'
+access_control:
+  default_policy: 'two_factor'
   rules:
   - domain: 'secure.{{< sitevar name="domain" nojs="example.com" >}}'
     policy: 'one_factor'
@@ -417,8 +402,10 @@ access_control:
 
 {{< confkey type="list(string)" required="no" >}}
 
-*__Important Note:__ to utilize regex you must escape it properly. See
-[regular expressions](../prologue/common.md#regular-expressions) for more information.*
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+To utilize regex you must escape it properly. See
+[regular expressions](../prologue/common.md#regular-expressions) for more information.
+{{< /callout >}}
 
 This criteria matches the path and query of the request using regular expressions. The rule is expressed as a list of
 strings. If any one of the regular expressions in the list matches the request it's considered a match. A useful tool
@@ -622,15 +609,15 @@ alphanumeric (including spaces).
 Here is a detailed example of an example access control section:
 
 ```yaml {title="configuration.yml"}
+definitions:
+  network:
+    internal:
+      - '10.10.0.0/16'
+      - '192.168.2.0/24'
+    vpn: '10.9.0.0/16'
+
 access_control:
   default_policy: 'deny'
-  networks:
-    - name: 'internal'
-      networks:
-        - '10.10.0.0/16'
-        - '192.168.2.0/24'
-    - name: 'VPN'
-      networks: '10.9.0.0/16'
   rules:
     - domain: 'public.{{< sitevar name="domain" nojs="example.com" >}}'
       policy: 'bypass'
@@ -644,7 +631,7 @@ access_control:
       policy: 'one_factor'
       networks:
         - 'internal'
-        - 'VPN'
+        - 'vpn'
         - '192.168.1.0/24'
         - '10.0.0.1'
 

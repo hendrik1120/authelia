@@ -34,6 +34,8 @@ authentication_backend:
   password_reset:
     disable: false
     custom_url: ''
+  password_change:
+    disable: false
 ```
 
 ## Options
@@ -44,8 +46,10 @@ This section describes the individual configuration options.
 
 {{< confkey type="string,integer" syntax="duration" default="5 minutes" required="no">}}
 
-_**Note:** when using the [File Provider](#file) this value has a default value of `always` as the cost in this
-scenario is basically not measurable, users can however override this setting by setting an explicit value._
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+When using the [File Provider](#file) this value has a default value of `always` as the cost in this
+scenario is basically not measurable, users can, however, override this setting by setting an explicit value.
+{{< /callout >}}
 
 This setting controls the interval at which details are refreshed from the backend. The details refreshed in order of
 importance are the groups, email address, and display name. This is particularly useful for the [File Provider](#file)
@@ -68,6 +72,15 @@ This setting controls if users can reset their password from the web frontend or
 
 The custom password reset URL. This replaces the inbuilt password reset functionality and disables the endpoints if
 this is configured to anything other than nothing or an empty string.
+
+### password_change
+
+#### disable
+
+{{< confkey type="boolean" default="false" required="no" >}}
+
+This setting controls if users can change their password from the web frontend or not.
+
 
 ### file
 

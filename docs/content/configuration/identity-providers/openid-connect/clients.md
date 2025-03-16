@@ -7,6 +7,8 @@ draft: false
 images: []
 weight: 110220
 toc: true
+aliases:
+  - /c/oidc/registered-clients
 seo:
   title: "" # custom title (optional)
   description: "" # custom description (recommended)
@@ -62,25 +64,49 @@ identity_providers:
           - 'fragment'
         authorization_policy: 'two_factor'
         lifespan: ''
+        claims_policy: ''
         requested_audience_mode: 'explicit'
         consent_mode: 'explicit'
         pre_configured_consent_duration: '1 week'
         require_pushed_authorization_requests: false
         require_pkce: false
         pkce_challenge_method: 'S256'
-        authorization_signed_response_alg: 'none'
         authorization_signed_response_key_id: ''
-        id_token_signed_response_alg: 'RS256'
+        authorization_signed_response_alg: 'none'
+        authorization_encrypted_response_key_id: ''
+        authorization_encrypted_response_alg: 'none'
+        authorization_encrypted_response_enc: 'A128CBC-HS256'
         id_token_signed_response_key_id: ''
-        access_token_signed_response_alg: 'none'
+        id_token_signed_response_alg: 'RS256'
+        id_token_encrypted_response_key_id: ''
+        id_token_encrypted_response_alg: 'none'
+        id_token_encrypted_response_enc: 'A128CBC-HS256'
         access_token_signed_response_key_id: ''
-        userinfo_signed_response_alg: 'none'
+        access_token_signed_response_alg: 'none'
+        access_token_encrypted_response_key_id: ''
+        access_token_encrypted_response_alg: 'none'
+        access_token_encrypted_response_enc: 'A128CBC-HS256'
         userinfo_signed_response_key_id: ''
-        introspection_signed_response_alg: 'none'
+        userinfo_signed_response_alg: 'none'
+        userinfo_encrypted_response_key_id: ''
+        userinfo_encrypted_response_alg: 'none'
+        userinfo_encrypted_response_enc: 'A128CBC-HS256'
         introspection_signed_response_key_id: ''
+        introspection_signed_response_alg: 'none'
+        introspection_encrypted_response_key_id: ''
+        introspection_encrypted_response_alg: 'none'
+        introspection_encrypted_response_enc: 'A128CBC-HS256'
         request_object_signing_alg: 'RS256'
-        token_endpoint_auth_signing_alg: 'RS256'
+        request_object_encryption_alg: ''
+        request_object_encryption_enc: ''
         token_endpoint_auth_method: 'client_secret_basic'
+        token_endpoint_auth_signing_alg: 'RS256'
+        revocation_endpoint_auth_method: 'client_secret_basic'
+        revocation_endpoint_auth_signing_alg: 'RS256'
+        introspection_endpoint_auth_method: 'client_secret_basic'
+        introspection_endpoint_auth_signing_alg: 'RS256'
+        pushed_authorization_request_endpoint_auth_method: 'client_secret_basic'
+        pushed_authorization_request_endpoint_auth_signing_alg: 'RS256'
         jwks_uri: ''
         jwks:
           - key_id: 'example'
@@ -105,8 +131,10 @@ identity_providers:
 
 {{< confkey type="string" required="yes" >}}
 
-_**Important Note:** We generally recommend using a semi-long random alphanumeric string for this value. See below for
-specific limitations._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+We generally recommend using a semi-long random alphanumeric string for this value. See below for
+specific limitations.
+{{< /callout >}}
 
 The Client ID for this client. It must exactly match the Client ID configured in the application consuming this client.
 
@@ -141,13 +169,17 @@ configuration option.
 
 {{< confkey type="string" required="no" >}}
 
-*__Important Note:__ Because adjusting this option will inevitably change the `sub` claim of all tokens generated for
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+Because adjusting this option will inevitably change the `sub` claim of all tokens generated for
 the specified client, changing this should cause the relying party to detect all future authorizations as completely new
-users.*
+users.
+{{< /callout >}}
 
-*__Important Note:__ This **must** either not be configured at all i.e. commented or completely absent from the
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+This **must** either not be configured at all i.e. commented or completely absent from the
 configuration, or it must be an absolute HTTPS URL which contains a valid sector identifier JSON document. Configuration
-of this option with the `https://` scheme per the requirements will cause Authelia to validate this JSON document.*
+of this option with the `https://` scheme per the requirements will cause Authelia to validate this JSON document.
+{{< /callout >}}
 
 A valid `sector_identifier_uri` will:
   1. Have the scheme `https://`.
@@ -243,7 +275,9 @@ expected,
 
 {{< confkey type="list(string)" default="authorization_code" required="no" >}}
 
-*__Important Note:__ It is recommended that this isn't configured at this time unless you know what you're doing.*
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+It is recommended that this isn't configured at this time unless you know what you're doing.
+{{< /callout >}}
 
 The list of grant types this client is permitted to use in order to obtain access to the token endpoint to obtain the
 granted tokens.
@@ -255,8 +289,10 @@ See the [Grant Types](../../../integration/openid-connect/introduction.md#grant-
 
 {{< confkey type="list(string)" default="code" required="no" >}}
 
-*__Security Note:__ It is recommended that only the `code` response type (i.e. the default) is used. The other response
-types are not as secure as this response type.*
+{{< callout context="danger" title="Security Note" icon="outline/alert-octagon" >}}
+It is recommended that only the `code` response type (i.e. the default) is used. The other response
+types are not as secure as this response type.
+{{< /callout >}}
 
 A list of response types this client supports. If a response type not in this list is requested by a client then an
 error will be returned to the client. The response type indicates the types of values that are returned to the client.
@@ -268,7 +304,9 @@ See the [Response Types](../../../integration/openid-connect/introduction.md#res
 
 {{< confkey type="list(string)" default="form_post,query" required="no" >}}
 
-*__Important Note:__ It is recommended that this isn't configured at this time unless you know what you're doing.*
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+It is recommended that this isn't configured at this time unless you know what you're doing.
+{{< /callout >}}
 
 A list of response modes this client supports. If a response mode not in this list is requested by a client then an
 error will be returned to the client. The response mode controls how the response type is returned to the client.
@@ -315,6 +353,13 @@ identity_providers:
 The name of the custom lifespan that this client uses. A custom lifespan is named and configured globally via the
 [custom](provider.md#custom) section within [lifespans](provider.md#lifespans).
 
+### claims_policy
+
+{{< confkey type="string" default="" required="no" >}}
+
+The name of the claims policy that this client uses. A claims policy is named and configured globally via the
+[claims_policies](provider.md#claims_policies) for the OpenID Connect 1.0 Provider.
+
 ### requested_audience_mode
 
 {{< confkey type="string" default="explicit" required="no" >}}
@@ -332,9 +377,11 @@ the audience.
 
 {{< confkey type="string" default="auto" required="no" >}}
 
-*__Important Note:__ the `implicit` consent mode is not technically part of the specification. It theoretically could be
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+The `implicit` consent mode is not technically part of the specification. It theoretically could be
 misused in certain conditions specifically with the public client type or when the client credentials (i.e. client
-secret) has been exposed to an attacker. For these reasons this mode is discouraged.*
+secret) has been exposed to an attacker. For these reasons this mode is discouraged.
+{{< /callout >}}
 
 Configures the consent mode. The following table describes the different modes:
 
@@ -365,8 +412,10 @@ match exactly with the granted scopes/audience.
 
 {{< confkey type="boolean" default="false" required="no" >}}
 
-_**Important Note:** A majority of clients will not support this option as it requires a special but highly secure
-authorization flow._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option as it requires a special but highly secure
+authorization flow.
+{{< /callout >}}
 
 This configuration option enforces the use of a [Pushed Authorization Requests] flow for this registered client.
 To enforce it for all clients see the global [pushed_authorizations enforce](provider.md#enforce) provider configuration
@@ -389,158 +438,599 @@ effectively enables the [require_pkce](#require_pkce) option for this client.
 Valid values are an empty string, `plain`, or `S256`. It should be noted that `S256` is strongly recommended if the
 relying party supports it.
 
-### authorization_signed_response_alg
-
-{{< confkey type="string" default="none" required="no" >}}
-
-_**Important Note:** A majority of clients will not support this option as the whole authorization response will be a
-signed and/or encrypted JWT with additional tokens embedded into it._
-
-_**Note:** This value is completely ignored if the
-[authorization_signed_response_key_id](#authorization_signed_response_key_id) is defined._
-
-The algorithm used to sign the authorization responses.
-
-See the response object section of the
-[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information including
-the algorithm column for supported values.
-
-With the exclusion of `none` which returns a traditional authorization response, the algorithm chosen must have a key
-configured in the [jwks] section to be considered valid.
-
-See the response object section of the [integration guide](../../../integration/openid-connect/introduction.md#response-object)
-for more information including the algorithm column for supported values.
-
 ### authorization_signed_response_key_id
 
 {{< confkey type="string" required="no" >}}
 
-_**Important Note:** A majority of clients will not support this option as the whole authorization response will be a
-signed and/or encrypted JWT with additional tokens embedded into it._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as it implements the
+[JARM](https://openid.net/specs/oauth-v2-jarm.html) specification where the whole authorization response becomes a
+signed JWT and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
 
-_**Note:** This value automatically configures the [authorization_signed_response_alg](#authorization_signed_response_alg)
-value with the algorithm of the specified key._
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value automatically configures the [authorization_signed_response_alg](#authorization_signed_response_alg)
+value with the algorithm of the specified key.
+{{< /callout >}}
 
-The key id of the JWK used to sign the ID Tokens in the token responses. The value of this must one of those provided or
-calculated in the [jwks].
+The key id of the [JSON Web Key] used to sign
+[Authorization Responses](https://openid.net/specs/oauth-v2-jarm.html#name-response-encoding) for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `kid` to this value.
+
+### authorization_signed_response_alg
+
+{{< confkey type="string" default="none" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as it implements the
+[JARM](https://openid.net/specs/oauth-v2-jarm.html) specification where the whole authorization response becomes a
+signed JWT and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[authorization_signed_response_key_id](#authorization_signed_response_key_id) is defined.
+{{< /callout >}}
+
+The algorithm of the [JSON Web Key] used to sign
+[Authorization Responses](https://openid.net/specs/oauth-v2-jarm.html#name-response-encoding) for this client.
+To be considered valid with exclusion of the value `none`:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `alg` to this value.
+
+See the response object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `sig`.
+
+### authorization_encrypted_response_key_id
+
+{{< confkey type="string" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as it implements the
+[JARM](https://openid.net/specs/oauth-v2-jarm.html) specification where the whole authorization response becomes a
+signed JWT and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[authorization_encrypted_response_alg](#authorization_encrypted_response_alg) is defined.
+{{< /callout >}}
+
+The key id of the [JSON Web Key] used to encrypt
+[Authorization Responses](https://openid.net/specs/oauth-v2-jarm.html#name-response-encoding) for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `kid` to this value.
+
+### authorization_encrypted_response_alg
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as it implements the
+[JARM](https://openid.net/specs/oauth-v2-jarm.html) specification where the whole authorization response becomes a
+signed JWT and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[authorization_encrypted_response_key_id](#authorization_encrypted_response_key_id) is defined.
+{{< /callout >}}
+
+The key algorithm of the [JSON Web Key] used to encrypt
+[Authorization Responses](https://openid.net/specs/oauth-v2-jarm.html#name-response-encoding) for this client.
+
+To be considered valid with exclusion of the value `none`:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `alg` to this value.
+2. The [authorization_signed_response_alg](#authorization_signed_response_alg) or
+   [authorization_response_key_id](#authorization_signed_response_key_id) option must be configured.
+
+See the response object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `enc`.
+
+### authorization_encrypted_response_enc
+
+{{< confkey type="string" default="A128CBC-HS256" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as it implements the
+[JARM](https://openid.net/specs/oauth-v2-jarm.html) specification where the whole authorization response becomes a
+signed JWT and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
+
+The content encryption algorithm used to encrypt the authorization responses.
+
+See the encryption algorithms section of the
+[integration guide](../../../integration/openid-connect/introduction.md#encryption-algorithms) for more information
+including the algorithm column for supported values.### id_token_signed_response_key_id
+
+{{< confkey type="string" required="no" >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value automatically configures the [id_token_signed_response_alg](#id_token_signed_response_alg)
+value with the algorithm of the specified key.
+{{< /callout >}}
+
+The key id of the [JSON Web Key] used to sign ID Tokens for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `kid` to this value.
 
 ### id_token_signed_response_alg
 
 {{< confkey type="string" default="RS256" required="no" >}}
 
-_**Note:** This value is completely ignored if the [id_token_signed_response_key_id](#id_token_signed_response_key_id)
-is defined._
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[id_token_signed_response_key_id](#id_token_signed_response_key_id) is defined.
+{{< /callout >}}
 
-The algorithm used to sign the ID Tokens in the token responses.
+The algorithm of the [JSON Web Key] used to sign ID Tokens for this client.
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `alg` to this value.
 
 See the response object section of the
-[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information including
-the algorithm column for supported values. This value can not be set to `none`.
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `sig`.
 
-The algorithm chosen must have a key configured in the [jwks] section to be considered valid.
-
-See the response object section of the [integration guide](../../../integration/openid-connect/introduction.md#response-object)
-for more information including the algorithm column for supported values.
-
-### id_token_signed_response_key_id
+### id_token_encrypted_response_key_id
 
 {{< confkey type="string" required="no" >}}
 
-_**Note:** This value automatically configures the [id_token_signed_response_alg](#id_token_signed_response_alg) value
-with the algorithm of the specified key._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option as the ID Token will be a nested within an
+encrypted JWT.
+{{< /callout >}}
 
-The key id of the JWK used to sign the ID Tokens in the token responses. The value of this must one of those provided or
-calculated in the issuer [jwks] section.
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[id_token_encrypted_response_alg](#id_token_encrypted_response_alg) is defined.
+{{< /callout >}}
+
+The key id of the [JSON Web Key] used to encrypt ID Tokens for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `kid` to this value.
+
+### id_token_encrypted_response_alg
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option as the ID Token will be a nested within an
+encrypted JWT.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[id_token_encrypted_response_key_id](#id_token_encrypted_response_key_id) is defined.
+{{< /callout >}}
+
+The key algorithm of the [JSON Web Key] used to encrypt ID Tokens for this client.
+
+To be considered valid with exclusion of the value `none`:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `alg` to this value.
+2. The [id_token_signed_response_alg](#id_token_signed_response_alg) or
+   [id_token_response_key_id](#id_token_signed_response_key_id) option must be configured.
+
+See the response object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `enc`.
+
+### id_token_encrypted_response_enc
+
+{{< confkey type="string" default="A128CBC-HS256" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option as the ID Token will be a nested within an
+encrypted JWT.
+{{< /callout >}}
+
+The content encryption algorithm used to encrypt the authorization responses.
+
+See the encryption algorithms section of the
+[integration guide](../../../integration/openid-connect/introduction.md#encryption-algorithms) for more information
+including the algorithm column for supported values.### access_token_signed_response_key_id
+
+{{< confkey type="string" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+Using any value other than `none` for this option enables encoding Access Tokens as JWT's per
+[RFC9068](https://datatracker.ietf.org/doc/html/rfc9068). It is critical to note that these Access Tokens should not be
+treated as an ID Token and the semantics of validating these token types differ. The JWT Profile Access Token is
+intended for resource servers to perform stateless validation of the Access Tokens and they should not be used to prove
+identity. We therefore only recommend implementing these tokens in heavier use cases where the cost of validating the
+Access Tokens against a database is too costly.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value automatically configures the [access_token_signed_response_alg](#access_token_signed_response_alg)
+value with the algorithm of the specified key.
+{{< /callout >}}
+
+The key id of the [JSON Web Key] used to sign Access Tokens for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `kid` to this value.
 
 ### access_token_signed_response_alg
 
 {{< confkey type="string" default="none" required="no" >}}
 
-_**Note:** This value is completely ignored if the [access_token_signed_response_key_id](#access_token_signed_response_key_id)
-is defined._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+Using any value other than `none` for this option enables encoding Access Tokens as JWT's per
+[RFC9068](https://datatracker.ietf.org/doc/html/rfc9068). It is critical to note that these Access Tokens should not be
+treated as an ID Token and the semantics of validating these token types differ. The JWT Profile Access Token is
+intended for resource servers to perform stateless validation of the Access Tokens and they should not be used to prove
+identity. We therefore only recommend implementing these tokens in heavier use cases where the cost of validating the
+Access Tokens against a database is too costly.
+{{< /callout >}}
 
-The algorithm used to sign the JWT Access Tokens in the token responses.
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[access_token_signed_response_key_id](#access_token_signed_response_key_id) is defined.
+{{< /callout >}}
+
+The algorithm of the [JSON Web Key] used to sign Access Tokens for this client.
+To be considered valid with exclusion of the value `none`:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `alg` to this value.
 
 See the response object section of the
-[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information including
-the algorithm column for supported values. This value can not be set to `none`.
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `sig`.
 
-The algorithm chosen must have a key configured in the issuer [jwks] section to
-be considered valid. In addition to the values listed we also support `none` as a value
-for this endpoint. When using the `none` value the Access Token is completely opaque and is not a JWT.
-
-See the response object section of the [integration guide](../../../integration/openid-connect/introduction.md#response-object)
-for more information including the algorithm column for supported values.
-
-### access_token_signed_response_key_id
+### access_token_encrypted_response_key_id
 
 {{< confkey type="string" required="no" >}}
 
-_**Note:** This value automatically configures the [access_token_signed_response_alg](#access_token_signed_response_alg) value with the
-algorithm of the specified key._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+Using any value other than `none` for this option enables encoding Access Tokens as JWT's per
+[RFC9068](https://datatracker.ietf.org/doc/html/rfc9068). It is critical to note that these Access Tokens should not be
+treated as an ID Token and the semantics of validating these token types differ. The JWT Profile Access Token is
+intended for resource servers to perform stateless validation of the Access Tokens and they should not be used to prove
+identity. We therefore only recommend implementing these tokens in heavier use cases where the cost of validating the
+Access Tokens against a database is too costly.
+{{< /callout >}}
 
-The key id of the JWK used to sign the [JWT Access Tokens](https://oauth.net/2/jwt-access-tokens/) in the token
-responses. The value of this must one of those provided or calculated in the
-issuer [jwks] section.
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[access_token_encrypted_response_alg](#access_token_encrypted_response_alg) is defined.
+{{< /callout >}}
+
+The key id of the [JSON Web Key] used to encrypt Access Tokens for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `kid` to this value.
+
+### access_token_encrypted_response_alg
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+Using any value other than `none` for this option enables encoding Access Tokens as JWT's per
+[RFC9068](https://datatracker.ietf.org/doc/html/rfc9068). It is critical to note that these Access Tokens should not be
+treated as an ID Token and the semantics of validating these token types differ. The JWT Profile Access Token is
+intended for resource servers to perform stateless validation of the Access Tokens and they should not be used to prove
+identity. We therefore only recommend implementing these tokens in heavier use cases where the cost of validating the
+Access Tokens against a database is too costly.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[access_token_encrypted_response_key_id](#access_token_encrypted_response_key_id) is defined.
+{{< /callout >}}
+
+The key algorithm of the [JSON Web Key] used to encrypt Access Tokens for this client.
+
+To be considered valid with exclusion of the value `none`:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `alg` to this value.
+2. The [access_token_signed_response_alg](#access_token_signed_response_alg) or
+   [access_token_response_key_id](#access_token_signed_response_key_id) option must be configured.
+
+See the response object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `enc`.
+
+### access_token_encrypted_response_enc
+
+{{< confkey type="string" default="A128CBC-HS256" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+Using any value other than `none` for this option enables encoding Access Tokens as JWT's per
+[RFC9068](https://datatracker.ietf.org/doc/html/rfc9068). It is critical to note that these Access Tokens should not be
+treated as an ID Token and the semantics of validating these token types differ. The JWT Profile Access Token is
+intended for resource servers to perform stateless validation of the Access Tokens and they should not be used to prove
+identity. We therefore only recommend implementing these tokens in heavier use cases where the cost of validating the
+Access Tokens against a database is too costly.
+{{< /callout >}}
+
+The content encryption algorithm used to encrypt the authorization responses.
+
+See the encryption algorithms section of the
+[integration guide](../../../integration/openid-connect/introduction.md#encryption-algorithms) for more information
+including the algorithm column for supported values.### userinfo_signed_response_key_id
+
+{{< confkey type="string" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as the whole User Information
+response rather than being a JSON document becomes a signed JWT and the signed JWT is optionally nested within an
+encrypted JWT.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value automatically configures the [userinfo_signed_response_alg](#userinfo_signed_response_alg)
+value with the algorithm of the specified key.
+{{< /callout >}}
+
+The key id of the [JSON Web Key] used to sign User Information responses for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `kid` to this value.
 
 ### userinfo_signed_response_alg
 
 {{< confkey type="string" default="none" required="no" >}}
 
-_**Note:** This value is completely ignored if the [userinfo_signed_response_key_id](#userinfo_signed_response_key_id) is defined._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as the whole User Information
+response rather than being a JSON document becomes a signed JWT and the signed JWT is optionally nested within an
+encrypted JWT.
+{{< /callout >}}
 
-The algorithm used to sign the userinfo endpoint responses.
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[userinfo_signed_response_key_id](#userinfo_signed_response_key_id) is defined.
+{{< /callout >}}
 
-See the response object section of the [integration guide](../../../integration/openid-connect/introduction.md#response-object)
-for more information including the algorithm column for supported values. In addition to the values listed we also
-support `none` as a value for this endpoint.
+The algorithm of the [JSON Web Key] used to sign User Information responses for this client.
+To be considered valid with exclusion of the value `none`:
 
-The algorithm chosen must have a key configured in the issuer [jwks] section to
-be considered valid.
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `alg` to this value.
 
-### userinfo_signed_response_key_id
+See the response object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `sig`.
+
+### userinfo_encrypted_response_key_id
 
 {{< confkey type="string" required="no" >}}
 
-_**Note:** This value automatically configures the [userinfo_signed_response_alg](#userinfo_signed_response_alg) value
-with the algorithm of the specified key._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as the whole User Information
+response rather than being a JSON document becomes a signed JWT and the signed JWT is optionally nested within an
+encrypted JWT.
+{{< /callout >}}
 
-The key id of the JWK used to sign the userinfo endpoint responses in the token responses. The value of this must one of
-those provided or calculated in the
-issuer [jwks] section.
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[userinfo_encrypted_response_alg](#userinfo_encrypted_response_alg) is defined.
+{{< /callout >}}
 
-### introspection_signed_response_alg
+The key id of the [JSON Web Key] used to encrypt User Information responses for this client.
 
-{{< confkey type="string" default="none" required="no" >}}
+To be considered valid:
 
-_**Note:** This value is completely ignored if the
-[introspection_signed_response_key_id](#introspection_signed_response_key_id) is defined._
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `kid` to this value.
 
-The algorithm used to sign the Introspection response. By default it is set to `none` which results in the response
-not being signed and the encoding being JSON.
+### userinfo_encrypted_response_alg
 
-If configured to any other value the response is a JWT in the `application/token-introspection+jwt` format.
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as the whole User Information
+response rather than being a JSON document becomes a signed JWT and the signed JWT is optionally nested within an
+encrypted JWT.
+{{< /callout >}}
 
-See the response object section of the [integration guide](../../../integration/openid-connect/introduction.md#response-object)
-for more information including the algorithm column for supported values.
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[userinfo_encrypted_response_key_id](#userinfo_encrypted_response_key_id) is defined.
+{{< /callout >}}
 
-The algorithm chosen must have a key configured in the issuer [jwks] section to be considered valid.
+The key algorithm of the [JSON Web Key] used to encrypt User Information responses for this client.
+
+To be considered valid with exclusion of the value `none`:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `alg` to this value.
+2. The [userinfo_signed_response_alg](#userinfo_signed_response_alg) or
+   [userinfo_response_key_id](#userinfo_signed_response_key_id) option must be configured.
+
+See the response object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `enc`.
+
+### userinfo_encrypted_response_enc
+
+{{< confkey type="string" default="A128CBC-HS256" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as the whole User Information
+response rather than being a JSON document becomes a signed JWT and the signed JWT is optionally nested within an
+encrypted JWT.
+{{< /callout >}}
+
+The content encryption algorithm used to encrypt the authorization responses.
+
+See the encryption algorithms section of the
+[integration guide](../../../integration/openid-connect/introduction.md#encryption-algorithms) for more information
+including the algorithm column for supported values.
 
 ### introspection_signed_response_key_id
 
 {{< confkey type="string" required="no" >}}
 
-_**Note:** This value automatically configures the [introspection_signed_response_alg](#introspection_signed_response_alg)
-value with the algorithm of the specified key._
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as this enables encoding the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) as a JWT as per
+[JWT Response for OAuth Token Introspection](https://www.ietf.org/archive/id/draft-ietf-oauth-jwt-introspection-response-12.html)
+i.e. rather than being a JSON document the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) becomes a signed JWT in the
+`application/token-introspection+jwt` format and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
 
-The key id of the JWK used to sign the Introspection responses. The value of this must one of those provided or
-calculated in the issuer [jwks] section.
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value automatically configures the [introspection_signed_response_alg](#introspection_signed_response_alg)
+value with the algorithm of the specified key.
+{{< /callout >}}
+
+The key id of the [JSON Web Key] used to sign Introspection responses for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `kid` to this value.
+
+### introspection_signed_response_alg
+
+{{< confkey type="string" default="none" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as this enables encoding the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) as a JWT as per
+[JWT Response for OAuth Token Introspection](https://www.ietf.org/archive/id/draft-ietf-oauth-jwt-introspection-response-12.html)
+i.e. rather than being a JSON document the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) becomes a signed JWT in the
+`application/token-introspection+jwt` format and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[introspection_signed_response_key_id](#introspection_signed_response_key_id) is defined.
+{{< /callout >}}
+
+The algorithm of the [JSON Web Key] used to sign Introspection responses for this client.
+To be considered valid with exclusion of the value `none`:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `sig` and a
+   matching `alg` to this value.
+
+See the response object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `sig`.
+
+### introspection_encrypted_response_key_id
+
+{{< confkey type="string" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as this enables encoding the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) as a JWT as per
+[JWT Response for OAuth Token Introspection](https://www.ietf.org/archive/id/draft-ietf-oauth-jwt-introspection-response-12.html)
+i.e. rather than being a JSON document the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) becomes a signed JWT in the
+`application/token-introspection+jwt` format and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[introspection_encrypted_response_alg](#introspection_encrypted_response_alg) is defined.
+{{< /callout >}}
+
+The key id of the [JSON Web Key] used to encrypt Introspection responses for this client.
+
+To be considered valid:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `kid` to this value.
+
+### introspection_encrypted_response_alg
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as this enables encoding the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) as a JWT as per
+[JWT Response for OAuth Token Introspection](https://www.ietf.org/archive/id/draft-ietf-oauth-jwt-introspection-response-12.html)
+i.e. rather than being a JSON document the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) becomes a signed JWT in the
+`application/token-introspection+jwt` format and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+This value is completely ignored if the
+[introspection_encrypted_response_key_id](#introspection_encrypted_response_key_id) is defined.
+{{< /callout >}}
+
+The key algorithm of the [JSON Web Key] used to encrypt Introspection responses for this client.
+
+To be considered valid with exclusion of the value `none`:
+
+1. The chosen value must have a [JSON Web Key] configured in the [jwks] section with the use value `enc` and a
+   matching `alg` to this value.
+2. The [introspection_signed_response_alg](#introspection_signed_response_alg) or
+   [introspection_response_key_id](#introspection_signed_response_key_id) option must be configured.
+
+See the response object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#response-object) for more information. The
+supported values come from the algorithm column with a use of `enc`.
+
+### introspection_encrypted_response_enc
+
+{{< confkey type="string" default="A128CBC-HS256" required="no" >}}
+
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+A majority of clients will not support this option with any value other than `none` as this enables encoding the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) as a JWT as per
+[JWT Response for OAuth Token Introspection](https://www.ietf.org/archive/id/draft-ietf-oauth-jwt-introspection-response-12.html)
+i.e. rather than being a JSON document the
+[Introspection Response](https://datatracker.ietf.org/doc/html/rfc7662#section-2.2) becomes a signed JWT in the
+`application/token-introspection+jwt` format and the signed JWT is optionally nested within an encrypted JWT.
+{{< /callout >}}
+
+The content encryption algorithm used to encrypt the authorization responses.
+
+See the encryption algorithms section of the
+[integration guide](../../../integration/openid-connect/introduction.md#encryption-algorithms) for more information
+including the algorithm column for supported values.
 
 ### request_object_signing_alg
 
 {{< confkey type="string" default="RS256" required="no" >}}
 
 The JWT signing algorithm accepted for request objects.
+
+See the request object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#request-object) for more information including
+the algorithm column for supported values.
+
+### request_object_encryption_alg
+
+{{< confkey type="string" required="no" >}}
+
+The JWT content encryption algorithm accepted for request objects.
+
+See the request object section of the
+[integration guide](../../../integration/openid-connect/introduction.md#request-object) for more information including
+the algorithm column for supported values.
+
+### request_object_encryption_enc
+
+{{< confkey type="string" required="no" >}}
+
+The JWT encryption algorithm accepted for request objects.
 
 See the request object section of the
 [integration guide](../../../integration/openid-connect/introduction.md#request-object) for more information including
@@ -576,6 +1066,97 @@ otherwise we assume the default value:
 | [token_endpoint_auth_method](#token_endpoint_auth_method) |  `private_key_jwt`  | `RS256` |
 | [token_endpoint_auth_method](#token_endpoint_auth_method) | `client_secret_jwt` | `HS256` |
 
+### revocation_endpoint_auth_method
+
+{{< confkey type="string" default="client_secret_basic" required="no" >}}
+
+The registered client authentication mechanism used by this client for the [Revocation Endpoint]. If no method is defined
+the confidential client type will default to `client_secret_basic` as this is required by the specification. The public
+client type defaults to `none` as this is required by the specification. Supported values are `client_secret_basic`,
+`client_secret_post`, `client_secret_jwt`, `private_key_jwt`, and `none`.
+
+See the [integration guide](../../../integration/openid-connect/introduction.md#client-authentication-method) for
+more information.
+
+### revocation_endpoint_auth_signing_alg
+
+{{< confkey type="string" default="RS256" required="no" >}}
+
+The JWT signing algorithm accepted when the [revocation_endpoint_auth_method](#revocation_endpoint_auth_method) is
+configured as `client_secret_jwt` or `private_key_jwt`.
+
+See the request object section of the [integration guide](../../../integration/openid-connect/introduction.md#request-object)
+for more information including the algorithm column for supported values.
+
+It's recommended that you specifically configure this when the following options are configured to specific values
+otherwise we assume the default value:
+
+|                        Configuration Option                         |        Value        | Default |
+|:-------------------------------------------------------------------:|:-------------------:|:-------:|
+| [revocation_endpoint_auth_method](#revocation_endpoint_auth_method) |  `private_key_jwt`  | `RS256` |
+| [revocation_endpoint_auth_method](#revocation_endpoint_auth_method) | `client_secret_jwt` | `HS256` |
+
+### introspection_endpoint_auth_method
+
+{{< confkey type="string" default="client_secret_basic" required="no" >}}
+
+The registered client authentication mechanism used by this client for the [Introspection Endpoint]. If no method is
+defined the confidential client type will default to `client_secret_basic` as this is required by the specification. The
+public client type defaults to `none` as this is required by the specification. Supported values are
+`client_secret_basic`, `client_secret_post`, `client_secret_jwt`, `private_key_jwt`, and `none`.
+
+See the [integration guide](../../../integration/openid-connect/introduction.md#client-authentication-method) for
+more information.
+
+### introspection_endpoint_auth_signing_alg
+
+{{< confkey type="string" default="RS256" required="no" >}}
+
+The JWT signing algorithm accepted when the [introspection_endpoint_auth_method](#introspection_endpoint_auth_method) is
+configured as `client_secret_jwt` or `private_key_jwt`.
+
+See the request object section of the [integration guide](../../../integration/openid-connect/introduction.md#request-object)
+for more information including the algorithm column for supported values.
+
+It's recommended that you specifically configure this when the following options are configured to specific values
+otherwise we assume the default value:
+
+|                           Configuration Option                            |        Value        | Default |
+|:-------------------------------------------------------------------------:|:-------------------:|:-------:|
+| [introspection_endpoint_auth_method](#introspection_endpoint_auth_method) |  `private_key_jwt`  | `RS256` |
+| [introspection_endpoint_auth_method](#introspection_endpoint_auth_method) | `client_secret_jwt` | `HS256` |
+
+### pushed_authorization_request_endpoint_auth_method
+
+{{< confkey type="string" default="client_secret_basic" required="no" >}}
+
+The registered client authentication mechanism used by this client for the [Pushed Authorization Request Endpoint]. If
+no method is defined the confidential client type will default to `client_secret_basic` as this is required by the
+specification. The public client type defaults to `none` as this is required by the specification. Supported values are
+`client_secret_basic`, `client_secret_post`, `client_secret_jwt`, `private_key_jwt`, and `none`.
+
+See the [integration guide](../../../integration/openid-connect/introduction.md#client-authentication-method) for
+more information.
+
+### pushed_authorization_request_endpoint_auth_signing_alg
+
+{{< confkey type="string" default="RS256" required="no" >}}
+
+The JWT signing algorithm accepted when the
+[pushed_authorization_request_endpoint_auth_method](#pushed_authorization_request_endpoint_auth_method) is configured as
+`client_secret_jwt` or `private_key_jwt`.
+
+See the request object section of the [integration guide](../../../integration/openid-connect/introduction.md#request-object)
+for more information including the algorithm column for supported values.
+
+It's recommended that you specifically configure this when the following options are configured to specific values
+otherwise we assume the default value:
+
+|                                          Configuration Option                                           |        Value        | Default |
+|:-------------------------------------------------------------------------------------------------------:|:-------------------:|:-------:|
+| [pushed_authorization_request_endpoint_auth_method](#pushed_authorization_request_endpoint_auth_method) |  `private_key_jwt`  | `RS256` |
+| [pushed_authorization_request_endpoint_auth_method](#pushed_authorization_request_endpoint_auth_method) | `client_secret_jwt` | `HS256` |
+
 ### allow_multiple_auth_methods
 
 {{< confkey type="boolean" default="false" required="no" >}}
@@ -594,8 +1175,10 @@ The client MUST NOT use more than one authentication method in each request.
 
 {{< confkey type="string" required="situational" >}}
 
-*__Important Note:__ the URL given in this value MUST be resolvable by Authelia and MUST present a certificate signed by
-a certificate trusted by your environment. It is beyond our intentions to support anything other than this.*
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+The URL given in this value MUST be resolvable by Authelia and MUST present a certificate signed by
+a certificate trusted by your environment. It is beyond our intentions to support anything other than this.
+{{< /callout >}}
 
 The fully qualified, `https` scheme, and appropriately signed URI for the JWKs endpoint that implements
 [RFC7517 Section 5](https://datatracker.ietf.org/doc/html/rfc7517#section-5).This is mutually exclusive with [jwks](#jwks), meaning they must not be configured at the same
@@ -738,3 +1321,4 @@ To integrate Authelia's [OpenID Connect 1.0] implementation with a relying party
 [Pairwise Identifier Algorithm]: https://openid.net/specs/openid-connect-core-1_0.html#PairwiseAlg
 [Pushed Authorization Requests]: https://datatracker.ietf.org/doc/html/rfc9126
 [jwks]: provider.md#jwks
+[JSON Web Key]: provider.md#jwks

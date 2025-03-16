@@ -23,16 +23,18 @@ seo:
 ## Tested Versions
 
 * [Authelia]
-  * [v4.38.0](https://github.com/authelia/authelia/releases/tag/v4.38.0)
+  * [v4.38.17](https://github.com/authelia/authelia/releases/tag/v4.38.17)
 * [Proxmox]
-  * 7.1-10
+  * [8.3.0](https://pve.proxmox.com/wiki/Roadmap#Proxmox_VE_8.3)
 
 {{% oidc-common %}}
 
 ### Specific Notes
 
-*__Important Note:__ [Proxmox] requires you create the Realm prior to adding the provider. This is not covered in this
-guide.*
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+[Proxmox](https://www.proxmox.com/) requires you create the Realm before adding the provider. This is not covered in this
+guide.
+{{< /callout >}}
 
 ### Assumptions
 

@@ -29,8 +29,10 @@ throughout this documentation and in the [See Also](#see-also) section.*
 As [SWAG] is a [NGINX] proxy with curated configurations, integration of __Authelia__ with [SWAG] is very easy and you
 only need to enabled two includes.
 
-*__Note:__ All paths in this guide are the locations inside the container. You will have to either edit the files within
-the container or adapt the path to the path you have mounted the relevant container path to.*
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+All paths in this guide are the locations inside the container. You will have to either edit the files within
+the container or adapt the path to the path you have mounted the relevant container path to.
+{{< /callout >}}
 
 ## Get started
 
@@ -92,7 +94,7 @@ they have several configuration examples in the `/config/nginx/proxy-confs` dire
 If you're looking for a more complete solution [linuxserver.io] also have an nginx container called [SWAG](swag.md)
 which includes ACME and various other useful utilities.
 
-```yaml {title="docker-compose.yml"}
+```yaml {title="compose.yml"}
 ---
 networks:
   net:
@@ -132,8 +134,6 @@ services:
     networks:
       net:
         aliases: []
-    expose:
-      - {{< sitevar name="port" nojs="9091" >}}
     volumes:
       - '${PWD}/data/authelia/config:/config'
     environment:
@@ -145,8 +145,6 @@ services:
     networks:
       net:
         aliases: []
-    expose:
-      - 80
     volumes:
       - '${PWD}/data/organizr/config:/config'
     environment:
@@ -160,8 +158,6 @@ services:
     networks:
       net:
         aliases: []
-    expose:
-      - 80
     environment:
       TZ: 'Australia/Melbourne'
 ...
@@ -303,3 +299,4 @@ server {
 [SWAG]: https://docs.linuxserver.io/general/swag
 [NGINX]: https://www.nginx.com/
 [Forwarded Headers]: forwarded-headers
+[linuxserver.io]: https://www.linuxserver.io/

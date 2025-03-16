@@ -109,10 +109,7 @@ The username paired with the password used to connect to the database.
 
 ### password
 
-{{< confkey type="string" required="yes" >}}
-
-*__Important Note:__ This can also be defined using a [secret](../methods/secrets.md) which is __strongly recommended__
-especially for containerized deployments.*
+{{< confkey type="string" required="situational" secret="yes" >}}
 
 The password paired with the [username](#username) used to connect to the database.
 
@@ -130,8 +127,12 @@ The SQL connection timeout.
 
 {{< confkey type="structure" structure="tls" required="no" >}}
 
-If defined enables connecting to [MySQL] or [MariaDB] over a TLS socket, and additionally controls the TLS connection
-validation parameters.
+If defined enables connecting over a TLS socket and additionally controls the TLS connection
+verification parameters for the [MySQL] or [MariaDB] server.
+
+By default Authelia uses the system certificate trust for TLS certificate verification of TLS connections and the
+[certificates_directory](../miscellaneous/introduction.md#certificates_directory) global option can be used to augment
+this.
 
 [MySQL]: https://www.mysql.com/
 [MariaDB]: https://mariadb.org/

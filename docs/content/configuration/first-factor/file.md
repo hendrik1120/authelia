@@ -28,6 +28,10 @@ authentication_backend:
     search:
       email: false
       case_insensitive: false
+    extra_attributes:
+      extra_example:
+        multi_valued: false
+        value_type: 'string'
     password:
       algorithm: 'argon2'
       argon2:
@@ -78,25 +82,72 @@ Enables reloading the database by watching it for changes.
 
 Username searching functionality options.
 
-*__Important Note:__ This functionality is experimental.*
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+This functionality is experimental.
+{{< /callout >}}
 
 #### email
 
 {{< confkey type="boolean" default="false" required="no" >}}
 
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+Emails are always checked using case-insensitive lookup.
+{{< /callout >}}
+
 Allows users to login using their email address. If enabled two users must not have the same emails and their usernames
 must not be an email.
-
-*__Note:__ Emails are always checked using case-insensitive lookup.*
 
 #### case_insensitive
 
 {{< confkey type="boolean" default="false" required="no" >}}
 
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+Emails are always checked using case-insensitive lookup.
+{{< /callout >}}
+
 Enabling this search option allows users to login with their username regardless of case. If enabled users must only
 have lowercase usernames.
 
-*__Note:__ Emails are always checked using case-insensitive lookup.*
+### extra_attributes
+
+{{< confkey type="dictionary(object)" required="no" >}}
+
+{{< callout context="note" title="Note" icon="outline/info-circle" >}}
+In addition to the extra attributes, you can configure custom attributes based on the values of existing attributes.
+This is done via the [Definitions](../definitions/user-attributes.md) section.
+{{< /callout >}}
+
+The extra attributes to load from the directory server. These extra attributes can be used in other areas of _Authelia_
+such as [OpenID Connect 1.0](../identity-providers/openid-connect/provider.md).  It's also recommended to check out the
+[Attributes Reference Guide](../../reference/guides/attributes.md) for more information.
+
+The key represents the backend attribute name. The database will be validated given the `multi_valued` and `value_type`
+configuration.
+
+In the example below, we load the directory server attribute `example_file_attribute` into the _Authelia_ attribute
+`example_file_attribute`, treat it as a single valued attribute which has an underlying type of `integer`.
+
+```yaml
+authentication_backend:
+  file:
+    extra_attributes:
+      example_file_attribute:
+        multi_valued: false
+        value_type: 'integer'
+```
+
+#### value_type
+
+{{< confkey type="string" required="yes" >}}
+
+This defines the underlying type the attribute must be. This is required if an extra attribute is configured. The valid
+values are `string`, `integer`, or `boolean`.
+
+#### multi_valued
+
+{{< confkey type="boolean" required="no" >}}
+
+This indicates the underlying type can have multiple values.
 
 ## Password Options
 
@@ -251,10 +302,12 @@ The [Bcrypt] algorithm implementation.
 Controls the variant when hashing passwords using [Bcrypt]. Recommended `standard`.
 Permitted values `standard`, `sha256`.
 
-*__Important Note:__ The `sha256` variant is a special variant designed by
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+The `sha256` variant is a special variant designed by
 [Passlib](https://passlib.readthedocs.io/en/stable/lib/passlib.hash.bcrypt_sha256.html). This variant passes the
-password through a SHA256 HMAC before passing it to the [Bcrypt] algorithm, effectively bypassing the 72 byte password
-truncation that [Bcrypt] does. It is not supported by many other systems.*
+password through a SHA256 HMAC before passing it to the [Bcrypt](https://en.wikipedia.org/wiki/Bcrypt) algorithm, effectively bypassing the 72 byte password
+truncation that [Bcrypt](https://en.wikipedia.org/wiki/Bcrypt) does. It is not supported by many other systems.
+{{< /callout >}}
 
 #### cost
 

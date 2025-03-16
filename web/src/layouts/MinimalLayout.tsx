@@ -1,13 +1,15 @@
 import React, { ReactNode, useEffect } from "react";
 
-import { AppBar, Box, Container, Grid, Theme, Toolbar, Typography } from "@mui/material";
+import { Box, Container, Theme } from "@mui/material";
+import Grid from "@mui/material/Grid2";
 import makeStyles from "@mui/styles/makeStyles";
 import { useTranslation } from "react-i18next";
 
 import UserSvg from "@assets/images/user.svg?react";
-import AccountSettingsMenu from "@components/AccountSettingsMenu";
+import AppBarLoginPortal from "@components/AppBarLoginPortal";
 import PrivacyPolicyDrawer from "@components/PrivacyPolicyDrawer";
 import TypographyWithTooltip from "@components/TypographyWithTooltip";
+import { EncodedName } from "@constants/constants";
 import { UserInfo } from "@models/UserInfo";
 import { getLogoOverride } from "@utils/Configuration";
 
@@ -30,36 +32,29 @@ const MinimalLayout = function (props: Props) {
     );
 
     useEffect(() => {
-        document.title = `${translate("Login")} - Authelia`;
+        document.title = translate("Login - {{authelia}}", { authelia: atob(String.fromCharCode(...EncodedName)) });
     }, [translate]);
 
     return (
         <Box>
-            <AppBar position="static" color="transparent" elevation={0}>
-                <Toolbar variant="regular">
-                    <Typography style={{ flexGrow: 1 }} />
-                    {props.userInfo ? <AccountSettingsMenu userInfo={props.userInfo} /> : null}
-                </Toolbar>
-            </AppBar>
+            <AppBarLoginPortal userInfo={props.userInfo} />
             <Grid
                 id={props.id}
                 className={styles.root}
                 container
                 spacing={0}
-                alignItems="center"
-                justifyContent="center"
+                alignItems={"center"}
+                justifyContent={"center"}
             >
-                <Container maxWidth="xs" className={styles.rootContainer}>
+                <Container maxWidth={"xs"} className={styles.rootContainer}>
                     <Grid container>
-                        <Grid item xs={12}>
-                            {logo}
-                        </Grid>
+                        <Grid size={{ xs: 12 }}>{logo}</Grid>
                         {props.title ? (
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                                 <TypographyWithTooltip variant={"h5"} value={props.title} />
                             </Grid>
                         ) : null}
-                        <Grid item xs={12} className={styles.body}>
+                        <Grid size={{ xs: 12 }} className={styles.body}>
                             {props.children}
                         </Grid>
                     </Grid>

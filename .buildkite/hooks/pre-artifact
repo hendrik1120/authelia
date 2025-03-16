@@ -2,7 +2,7 @@
 
 set +u
 
-declare -A BUILDS=(["linux"]="amd64 arm arm64 amd64-musl arm-musl arm64-musl" ["freebsd"]="amd64")
+declare -A BUILDS=(["linux"]="amd64 arm arm64" ["freebsd"]="amd64")
 DOCKER_IMAGE=authelia:dist
 
 if [[ "${BUILDKITE_LABEL}" == ":hammer_and_wrench: Unit Test" ]]; then
@@ -11,7 +11,7 @@ if [[ "${BUILDKITE_LABEL}" == ":hammer_and_wrench: Unit Test" ]]; then
     for OS in "${!BUILDS[@]}"; do
       for ARCH in ${BUILDS[$OS]}; do
         if [[ ${OS} == linux ]]; then
-          tar -czf "authelia-${OS}-${ARCH}.tar.gz" "authelia-${OS}-${ARCH}" authelia.service config.template.yml
+          tar -czf "authelia-${OS}-${ARCH}.tar.gz" "authelia-${OS}-${ARCH}" authelia.service authelia@.service authelia.sysusers.conf authelia.tmpfiles.conf authelia.tmpfiles.config.conf config.template.yml
         elif [[ ${OS} == freebsd ]]; then
           tar -czf "authelia-${OS}-${ARCH}.tar.gz" "authelia-${OS}-${ARCH}" authelia-fb-rc.d config.template.yml
         else

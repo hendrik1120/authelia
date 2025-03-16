@@ -33,17 +33,24 @@ This section describes the individual configuration options.
 
 ### certificates_directory
 
-This option defines the location of additional certificates to load into the trust chain specifically for Authelia.
-This currently affects both the SMTP notifier and the LDAP authentication backend. The certificates should all be in the
-PEM format and end with the extension `.pem`, `.crt`, or `.cer`. You can either add the individual certificates public
-key or the CA public key which signed them (don't add the private key).
+By default Authelia uses the system certificate trust for TLS certificate verification but you can augment this with
+this option which forms the foundation for trusting TLS connections within Authelia. Most if not all TLS connections
+have the server TLS certificate verified using this augmented certificate trust store.
+
+This option specifically specifies a directory path which may contain one or more certificates encoded in the X.509 PEM
+format. The certificates themselves must have extension `.pem`, `.crt`, or `.cer`.
+
+These certificates can either be the CA public key which trusts the given certificate and any
+certificate signed by it, or a specific individual leaf certificate.
 
 ### default_redirection_url
 
 {{< confkey type="string" required="no" >}}
 
-*__Important Note:__ You should configure the domain specific redirection URL's in the
-[session](../session/introduction.md#default_redirection_url) configuration instead of using this option.*
+{{< callout context="caution" title="Important Note" icon="outline/alert-triangle" >}}
+You should configure the domain-specific redirection URL's in the
+[session](../session/introduction.md#default_redirection_url) configuration instead of using this option.
+{{< /callout >}}
 
 The default redirection URL is the URL where users are redirected when Authelia cannot detect the target URL where the
 user was heading.
