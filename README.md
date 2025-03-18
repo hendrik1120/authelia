@@ -47,8 +47,16 @@ and ingress configurations.
 Here is what Authelia's portal looks like:
 
 <p align="center">
-  <img src="https://www.authelia.com/images/oled.png" width="400" />
-  <img src="https://www.authelia.com/images/2FA-METHODS.png" width="400" />
+    <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/hendrik1120/authelia/refs/heads/pics/docs/static/images/dark.png" width="400">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/hendrik1120/authelia/refs/heads/pics/docs/static/images/light.png" width="400">
+    <img src="https://www.authelia.com/images/light.png" width="400">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/hendrik1120/authelia/refs/heads/pics/docs/static/images/2fa-methods-dark.png" width="400">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/hendrik1120/authelia/refs/heads/pics/docs/static/images/2fa-methods-light.png" width="400">
+    <img src="https://www.authelia.com/images/2fa-methods-light.pn" width="400">
+  </picture>
 </p>
 
 ## Features summary
