@@ -218,7 +218,7 @@ location / {
 }
 ```
 {{< callout context="note" title="Websockets" icon="outline/info-circle" >}}
-Note that because we are using the advanced configuration tab, the switches on the `Details` tab will have no effect.  If websockets are required for a protected application, you must include the websocket.conf from the [NGINX Snippets](../nginx.md#supporting-configuration-snippets). 
+Note that because we are using the advanced configuration tab, the switches on the `Details` tab will have no effect.  If websockets are required for a protected application, you must include the websocket.conf from the [NGINX Snippets](../nginx.md#supporting-configuration-snippets).
 {{< /callout >}}
 
 #### Protected Application Screenshots
@@ -254,7 +254,7 @@ location /custom {
 
 The following screenshot shows an example of following the directions for the Authelia Portal and two applications:
 
-{{< picture src="proxyhosts.png" alt="Step 4" width="450" >}}
+{{< picture src="proxyhosts.png" alt="Step 4" process="resize 750x" >}}
 
 ## See Also
 
