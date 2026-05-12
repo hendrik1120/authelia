@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 
@@ -35,7 +36,7 @@ func (s *HandlerSignPasswordSuite) SetupTest() {
 	s.Assert().NoError(s.mock.Ctx.SaveSession(userSession))
 
 	s.mock.Clock.Set(time.Unix(1701295903, 0))
-	s.mock.Ctx.Clock = &s.mock.Clock
+	s.mock.Ctx.Providers.Clock = &s.mock.Clock
 	s.mock.Ctx.Configuration.TOTP = schema.DefaultTOTPConfiguration
 }
 
@@ -68,7 +69,7 @@ func (s *HandlerSignPasswordSuite) TestShouldRedirectUserToDefaultURL() {
 
 	s.mock.Ctx.Configuration.Session.Cookies[0].DefaultRedirectionURL = testRedirectionURL
 
-	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{
+	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{ //nolint:gosec
 		Password: "123456",
 	})
 
@@ -103,10 +104,10 @@ func (s *HandlerSignPasswordSuite) TestShouldHandleOpenIDConnect() {
 
 	s.mock.Ctx.Configuration.Session.Cookies[0].DefaultRedirectionURL = testRedirectionURL
 
-	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{
-		Password:   "123456",
-		Workflow:   workflowOpenIDConnect,
-		WorkflowID: "abc",
+	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{ //nolint:gosec
+		Password: "123456",
+		Flow:     flowNameOpenIDConnect,
+		FlowID:   "abc",
 	})
 	s.Require().NoError(err)
 	s.mock.Ctx.Request.SetBody(bodyBytes)
@@ -114,7 +115,7 @@ func (s *HandlerSignPasswordSuite) TestShouldHandleOpenIDConnect() {
 	SecondFactorPasswordPOST(nil)(s.mock.Ctx)
 
 	s.mock.Assert200KO(s.T(), "Authentication failed. Check your credentials.")
-	s.AssertLastLogMessage("unable to parse consent session challenge id 'abc': invalid UUID length: 3", "")
+	s.mock.AssertLogEntryAdvanced(s.T(), 0, logrus.ErrorLevel, "Error occurred parsing the consent session flow id", map[string]any{"error": "invalid UUID length: 3", "flow": "openid_connect", "flow_id": "abc", "subflow": ""})
 }
 
 func (s *HandlerSignPasswordSuite) TestShouldRedirectUserToDefaultURLDelayFunc() {
@@ -138,7 +139,7 @@ func (s *HandlerSignPasswordSuite) TestShouldRedirectUserToDefaultURLDelayFunc()
 
 	s.mock.Ctx.Configuration.Session.Cookies[0].DefaultRedirectionURL = testRedirectionURL
 
-	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{
+	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{ //nolint:gosec
 		Password: "123456",
 	})
 	s.Require().NoError(err)
@@ -174,7 +175,7 @@ func (s *HandlerSignPasswordSuite) TestShouldErrorMarkAttempt() {
 
 	s.mock.Ctx.Configuration.Session.Cookies[0].DefaultRedirectionURL = testRedirectionURL
 
-	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{
+	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{ //nolint:gosec
 		Password: "123456",
 	})
 	s.Require().NoError(err)
@@ -207,7 +208,7 @@ func (s *HandlerSignPasswordSuite) TestShouldHandleBadPassword() {
 
 	s.mock.Ctx.Configuration.Session.Cookies[0].DefaultRedirectionURL = testRedirectionURL
 
-	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{
+	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{ //nolint:gosec
 		Password: "123456",
 	})
 	s.Require().NoError(err)
@@ -240,7 +241,7 @@ func (s *HandlerSignPasswordSuite) TestShouldHandleBadPasswordMarkAttemptError()
 
 	s.mock.Ctx.Configuration.Session.Cookies[0].DefaultRedirectionURL = testRedirectionURL
 
-	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{
+	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{ //nolint:gosec
 		Password: "123456",
 	})
 	s.Require().NoError(err)
@@ -273,7 +274,7 @@ func (s *HandlerSignPasswordSuite) TestShouldHandleBadPasswordWithError() {
 
 	s.mock.Ctx.Configuration.Session.Cookies[0].DefaultRedirectionURL = testRedirectionURL
 
-	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{
+	bodyBytes, err := json.Marshal(bodySecondFactorPasswordRequest{ //nolint:gosec
 		Password: "123456",
 	})
 	s.Require().NoError(err)

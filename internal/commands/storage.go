@@ -30,22 +30,16 @@ func newStorageCmd(ctx *CmdCtx) (cmd *cobra.Command) {
 
 	cmd.PersistentFlags().String(cmdFlagNameSQLite3Path, "", "the SQLite database path")
 
-	cmd.PersistentFlags().String(cmdFlagNameMySQLHost, "", "the MySQL hostname")
-	cmd.PersistentFlags().Int(cmdFlagNameMySQLPort, 3306, "the MySQL port")
+	cmd.PersistentFlags().String(cmdFlagNameMySQLAddress, "tcp://127.0.0.1:3306", "the MySQL server address")
 	cmd.PersistentFlags().String(cmdFlagNameMySQLDatabase, "authelia", "the MySQL database name")
 	cmd.PersistentFlags().String(cmdFlagNameMySQLUsername, "authelia", "the MySQL username")
 	cmd.PersistentFlags().String(cmdFlagNameMySQLPassword, "", "the MySQL password")
 
-	cmd.PersistentFlags().String(cmdFlagNamePostgreSQLHost, "", "the PostgreSQL hostname")
-	cmd.PersistentFlags().Int(cmdFlagNamePostgreSQLPort, 5432, "the PostgreSQL port")
+	cmd.PersistentFlags().String(cmdFlagNamePostgreSQLAddress, "tcp://127.0.0.1:5432", "the PostgreSQL server address")
 	cmd.PersistentFlags().String(cmdFlagNamePostgreSQLDatabase, "authelia", "the PostgreSQL database name")
 	cmd.PersistentFlags().String(cmdFlagNamePostgreSQLSchema, "public", "the PostgreSQL schema name")
 	cmd.PersistentFlags().String(cmdFlagNamePostgreSQLUsername, "authelia", "the PostgreSQL username")
 	cmd.PersistentFlags().String(cmdFlagNamePostgreSQLPassword, "", "the PostgreSQL password")
-	cmd.PersistentFlags().String("postgres.ssl.mode", "disable", "the PostgreSQL ssl mode")
-	cmd.PersistentFlags().String("postgres.ssl.root_certificate", "", "the PostgreSQL ssl root certificate file location")
-	cmd.PersistentFlags().String("postgres.ssl.certificate", "", "the PostgreSQL ssl certificate file location")
-	cmd.PersistentFlags().String("postgres.ssl.key", "", "the PostgreSQL ssl key file location")
 
 	cmd.AddCommand(
 		newStorageCacheCmd(ctx),
@@ -173,7 +167,79 @@ func newStorageEncryptionCmd(ctx *CmdCtx) (cmd *cobra.Command) {
 	cmd.AddCommand(
 		newStorageEncryptionChangeKeyCmd(ctx),
 		newStorageEncryptionCheckCmd(ctx),
+		newStorageEncryptionRotateCmd(ctx),
 	)
+
+	return cmd
+}
+
+func newStorageEncryptionRotateCmd(ctx *CmdCtx) (cmd *cobra.Command) {
+	cmd = &cobra.Command{
+		Use:     "rotate",
+		Short:   cmdAutheliaStorageEncryptionRotateShort,
+		Long:    cmdAutheliaStorageEncryptionRotateLong,
+		Example: cmdAutheliaStorageEncryptionRotateExample,
+		Args:    cobra.NoArgs,
+
+		DisableAutoGenTag: true,
+	}
+
+	cmd.AddCommand(
+		newStorageEncryptRotateHMACCmd(ctx),
+	)
+
+	return cmd
+}
+
+func newStorageEncryptRotateHMACCmd(ctx *CmdCtx) (cmd *cobra.Command) {
+	cmd = &cobra.Command{
+		Use:     "hmac",
+		Short:   cmdAutheliaStorageEncryptionRotateHMACShort,
+		Long:    cmdAutheliaStorageEncryptionRotateHMACLong,
+		Example: cmdAutheliaStorageEncryptionRotateHMACExample,
+		Args:    cobra.NoArgs,
+
+		DisableAutoGenTag: true,
+	}
+
+	cmd.AddCommand(
+		newStorageEncryptRotateHMACOTPCmd(ctx),
+		newStorageEncryptRotateHMACOTCCmd(ctx),
+	)
+
+	return cmd
+}
+
+func newStorageEncryptRotateHMACOTCCmd(ctx *CmdCtx) (cmd *cobra.Command) {
+	cmd = &cobra.Command{
+		Use:     "otc",
+		Short:   cmdAutheliaStorageEncryptionRotateHMACOTCShort,
+		Long:    cmdAutheliaStorageEncryptionRotateHMACOTCLong,
+		Example: cmdAutheliaStorageEncryptionRotateHMACOTCExample,
+		RunE:    ctx.StorageSchemaEncryptionRotateRunE,
+		Args:    cobra.NoArgs,
+
+		DisableAutoGenTag: true,
+	}
+
+	cmd.Flags().BoolP(cmdFlagNameForce, "f", false, "force the rotation without confirmation")
+
+	return cmd
+}
+
+func newStorageEncryptRotateHMACOTPCmd(ctx *CmdCtx) (cmd *cobra.Command) {
+	cmd = &cobra.Command{
+		Use:     "otp",
+		Short:   cmdAutheliaStorageEncryptionRotateHMACOTPShort,
+		Long:    cmdAutheliaStorageEncryptionRotateHMACOTPLong,
+		Example: cmdAutheliaStorageEncryptionRotateHMACOTPExample,
+		RunE:    ctx.StorageSchemaEncryptionRotateRunE,
+		Args:    cobra.NoArgs,
+
+		DisableAutoGenTag: true,
+	}
+
+	cmd.Flags().BoolP(cmdFlagNameForce, "f", false, "force the rotation without confirmation")
 
 	return cmd
 }
@@ -312,7 +378,7 @@ func newStorageBansAddCmd(ctx *CmdCtx, use string) (cmd *cobra.Command) {
 		Args:    cobra.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if cmd.Flags().Changed("permanent") && cmd.Flags().Changed(cmdFlagNameDuration) {
-				return fmt.Errorf("invalid flag combination specified: both duration and permanent flags can't be uesd at the same time")
+				return fmt.Errorf("invalid flag combination specified: both duration and permanent flags can't be used at the same time")
 			}
 
 			return nil
@@ -520,6 +586,8 @@ func newStorageUserWebAuthnVerifyCmd(ctx *CmdCtx) (cmd *cobra.Command) {
 
 		DisableAutoGenTag: true,
 	}
+
+	cmd.Flags().Bool(cmdFlagNameVerbose, false, "enables verbose output")
 
 	return cmd
 }

@@ -6,19 +6,22 @@ import (
 	"testing"
 	"time"
 
-	oauthelia2 "authelia.com/provider/oauth2"
-	xjwt "authelia.com/provider/oauth2/token/jwt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	oauthelia2 "authelia.com/provider/oauth2"
+	xjwt "authelia.com/provider/oauth2/token/jwt"
+
+	"github.com/authelia/authelia/v4/internal/authentication"
 	"github.com/authelia/authelia/v4/internal/clock"
 	"github.com/authelia/authelia/v4/internal/configuration/schema"
 	"github.com/authelia/authelia/v4/internal/expression"
 	"github.com/authelia/authelia/v4/internal/model"
 	"github.com/authelia/authelia/v4/internal/oidc"
 	"github.com/authelia/authelia/v4/internal/random"
+	"github.com/authelia/authelia/v4/internal/storage"
 )
 
 func TestNewSession(t *testing.T) {
@@ -31,7 +34,6 @@ func TestNewSession(t *testing.T) {
 	assert.Equal(t, "", session.Subject)
 	require.NotNil(t, session.Claims)
 	assert.NotNil(t, session.Claims.Extra)
-	assert.NotNil(t, session.Extra)
 	require.NotNil(t, session.Headers)
 	assert.NotNil(t, session.Headers.Extra)
 }
@@ -74,7 +76,6 @@ func TestNewSessionWithAuthorizeRequest(t *testing.T) {
 	session := oidc.NewSessionWithRequester(ctx, MustParseRequestURI(issuer), "primary", "john", amr, extra, authAt, consent, request, nil)
 
 	require.NotNil(t, session)
-	require.NotNil(t, session.Extra)
 	require.NotNil(t, session.Headers)
 	require.NotNil(t, session.Headers.Extra)
 	require.NotNil(t, session.Claims)
@@ -90,7 +91,6 @@ func TestNewSessionWithAuthorizeRequest(t *testing.T) {
 	assert.Equal(t, subject.String(), session.Claims.Subject)
 	assert.Equal(t, amr, session.Claims.AuthenticationMethodsReferences)
 	assert.Equal(t, xjwt.NewNumericDate(authAt.UTC()), session.Claims.AuthTime)
-	assert.Equal(t, xjwt.NewNumericDate(requested.UTC()), session.Claims.RequestedAt)
 	assert.Equal(t, issuer, session.Claims.Issuer)
 	assert.Equal(t, "john", session.Claims.Extra[oidc.ClaimPreferredUsername])
 
@@ -110,7 +110,6 @@ func TestNewSessionWithAuthorizeRequest(t *testing.T) {
 	session = oidc.NewSessionWithRequester(ctx, MustParseRequestURI(issuer), "primary", "john", amr, extra, authAt, consent, request, claims)
 
 	require.NotNil(t, session)
-	require.NotNil(t, session.Extra)
 	require.NotNil(t, session.Headers)
 	require.NotNil(t, session.Headers.Extra)
 	require.NotNil(t, session.Claims)
@@ -126,7 +125,6 @@ func TestNewSessionWithAuthorizeRequest(t *testing.T) {
 	assert.Equal(t, subject.String(), session.Claims.Subject)
 	assert.Equal(t, amr, session.Claims.AuthenticationMethodsReferences)
 	assert.Equal(t, authAt.UTC(), session.Claims.AuthTime.Time)
-	assert.Equal(t, requested.UTC(), session.Claims.RequestedAt.Time)
 	assert.Equal(t, issuer, session.Claims.Issuer)
 	assert.Equal(t, "john", session.Claims.Extra[oidc.ClaimPreferredUsername])
 
@@ -145,6 +143,56 @@ func TestNewSessionWithAuthorizeRequest(t *testing.T) {
 	assert.Nil(t, session.Claims.AuthenticationMethodsReferences)
 }
 
+func TestWellKnownSignedConfigurationToMap(t *testing.T) {
+	testCases := []struct {
+		name  string
+		toMap func() xjwt.MapClaims
+	}{
+		{
+			"ShouldReturnMapClaimsForOAuth2WithIssuer",
+			func() xjwt.MapClaims {
+				claims := &oidc.OAuth2WellKnownSignedConfiguration{}
+				claims.Issuer = authExampleCom
+
+				return claims.ToMap()
+			},
+		},
+		{
+			"ShouldReturnMapClaimsForOAuth2Empty",
+			func() xjwt.MapClaims {
+				claims := &oidc.OAuth2WellKnownSignedConfiguration{}
+
+				return claims.ToMap()
+			},
+		},
+		{
+			"ShouldReturnMapClaimsForOpenIDConnectWithIssuer",
+			func() xjwt.MapClaims {
+				claims := &oidc.OpenIDConnectWellKnownSignedConfiguration{}
+				claims.Issuer = authExampleCom
+
+				return claims.ToMap()
+			},
+		},
+		{
+			"ShouldReturnMapClaimsForOpenIDConnectEmpty",
+			func() xjwt.MapClaims {
+				claims := &oidc.OpenIDConnectWellKnownSignedConfiguration{}
+
+				return claims.ToMap()
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := tc.toMap()
+
+			assert.NotNil(t, result)
+		})
+	}
+}
+
 // TestContext is a minimal implementation of Context for the purpose of testing.
 type TestContext struct {
 	context.Context
@@ -153,6 +201,9 @@ type TestContext struct {
 	IssuerURLFunc func() (issuerURL *url.URL, err error)
 	Clock         clock.Provider
 	Config        schema.Configuration
+	NilResolver   bool
+	Storage       storage.Provider
+	UserProvider  authentication.UserProvider
 }
 
 func (m *TestContext) Value(key any) any {
@@ -167,25 +218,18 @@ func (m *TestContext) GetRandom() (r random.Provider) {
 	return random.NewMathematical()
 }
 
-func (m *TestContext) GetConfiguration() (config schema.Configuration) {
-	return m.Config
+func (m *TestContext) GetConfiguration() (config *schema.Configuration) {
+	copied := m.Config
+
+	return &copied
 }
 
 func (m *TestContext) GetProviderUserAttributeResolver() expression.UserAttributeResolver {
-	return &expression.UserAttributes{}
-}
-
-// IssuerURL returns the MockIssuerURL.
-func (m *TestContext) RootURL() (issuerURL *url.URL) {
-	if m.IssuerURLFunc != nil {
-		if issuer, err := m.IssuerURLFunc(); err != nil {
-			panic(err)
-		} else {
-			return issuer
-		}
+	if m.NilResolver {
+		return nil
 	}
 
-	return m.MockIssuerURL
+	return &expression.UserAttributes{}
 }
 
 // IssuerURL returns the MockIssuerURL.
@@ -207,6 +251,14 @@ func (m *TestContext) GetClock() clock.Provider {
 
 func (m *TestContext) GetJWTWithTimeFuncOption() jwt.ParserOption {
 	return jwt.WithTimeFunc(m.GetClock().Now)
+}
+
+func (m *TestContext) GetProviderStorage() storage.Provider {
+	return m.Storage
+}
+
+func (m *TestContext) GetUserProvider() authentication.UserProvider {
+	return m.UserProvider
 }
 
 type TestCodeStrategy struct {

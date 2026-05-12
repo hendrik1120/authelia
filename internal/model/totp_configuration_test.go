@@ -9,16 +9,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 /*
 TestShouldOnlyMarshalPeriodAndDigitsAndAbsolutelyNeverSecret.
-This test is vital to ensuring the TOTP configuration is marshalled correctly. If encoding/json suddenly changes
-upstream and the json tag value of '-' doesn't exclude the field from marshalling then this test will pickup this
+This test is vital to ensuring the TOTP configuration is marshaled correctly. If encoding/json suddenly changes
+upstream and the json tag value of '-' doesn't exclude the field from marshaling then this test will pickup this
 issue prior to code being shipped.
 
-For this reason it's essential that the marshalled object contains all values populated, especially the secret.
+For this reason it's essential that the marshaled object contains all values populated, especially the secret.
 */
 func TestShouldOnlyMarshalPeriodAndDigitsAndAbsolutelyNeverSecret(t *testing.T) {
 	object := &TOTPConfiguration{
@@ -34,12 +34,13 @@ func TestShouldOnlyMarshalPeriodAndDigitsAndAbsolutelyNeverSecret(t *testing.T) 
 	}
 
 	object2 := TOTPConfiguration{
-		ID:        1,
-		Username:  "john",
-		Issuer:    "Authelia",
-		Algorithm: "SHA1",
-		Digits:    6,
-		Period:    30,
+		ID:         1,
+		Username:   "john",
+		Issuer:     "Authelia",
+		Algorithm:  "SHA1",
+		Digits:     6,
+		Period:     30,
+		LastUsedAt: sql.NullTime{Valid: true, Time: time.Unix(10000000000, 0).UTC()},
 
 		// DO NOT CHANGE THIS VALUE UNLESS YOU FULLY UNDERSTAND THE COMMENT AT THE TOP OF THIS TEST.
 		Secret: []byte("ABC123"),
@@ -52,7 +53,7 @@ func TestShouldOnlyMarshalPeriodAndDigitsAndAbsolutelyNeverSecret(t *testing.T) 
 	assert.NoError(t, err)
 
 	assert.Equal(t, "{\"created_at\":\"0001-01-01T00:00:00Z\",\"issuer\":\"Authelia\",\"algorithm\":\"SHA1\",\"digits\":6,\"period\":30}", string(data))
-	assert.Equal(t, "{\"created_at\":\"0001-01-01T00:00:00Z\",\"issuer\":\"Authelia\",\"algorithm\":\"SHA1\",\"digits\":6,\"period\":30}", string(data2))
+	assert.Equal(t, "{\"created_at\":\"0001-01-01T00:00:00Z\",\"last_used_at\":\"2286-11-20T17:46:40Z\",\"issuer\":\"Authelia\",\"algorithm\":\"SHA1\",\"digits\":6,\"period\":30}", string(data2))
 
 	// DO NOT REMOVE OR CHANGE THESE TESTS UNLESS YOU FULLY UNDERSTAND THE COMMENT AT THE TOP OF THIS TEST.
 	require.NotContains(t, string(data), "secret")
@@ -61,6 +62,11 @@ func TestShouldOnlyMarshalPeriodAndDigitsAndAbsolutelyNeverSecret(t *testing.T) 
 	require.NotContains(t, string(data2), "ABC123")
 	require.NotContains(t, string(data), "QUJDMTIz")
 	require.NotContains(t, string(data2), "QUJDMTIz")
+
+	object.UpdateSignInInfo(time.Unix(10000000001, 0).UTC())
+
+	assert.Equal(t, time.Unix(10000000001, 0).UTC(), object.LastUsedAt.Time)
+	assert.True(t, object.LastUsedAt.Valid)
 }
 
 func TestShouldReturnErrWhenImageTooSmall(t *testing.T) {
@@ -155,6 +161,62 @@ func TestTOTPConfigurationImportExport(t *testing.T) {
 			assert.WithinDuration(t, expected.CreatedAt, actual.CreatedAt, time.Second)
 			assert.WithinDuration(t, expected.LastUsedAt.Time, actual.LastUsedAt.Time, time.Second)
 			assert.Equal(t, expected.LastUsedAt.Valid, actual.LastUsedAt.Valid)
+		})
+	}
+}
+
+func TestTOTPConfigurationMarshalYAML(t *testing.T) {
+	config := &TOTPConfiguration{
+		CreatedAt: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+		Username:  "john",
+		Issuer:    "Authelia",
+		Algorithm: "SHA1",
+		Digits:    6,
+		Period:    30,
+		Secret:    []byte("ABCDEF"),
+	}
+
+	result, err := config.MarshalYAML()
+
+	assert.NoError(t, err)
+	assert.IsType(t, TOTPConfigurationData{}, result)
+
+	data := result.(TOTPConfigurationData)
+
+	assert.Equal(t, "john", data.Username)
+	assert.Equal(t, "Authelia", data.Issuer)
+	assert.Equal(t, "QUJDREVG", data.Secret)
+}
+
+func TestTOTPConfigurationUnmarshalYAMLErrors(t *testing.T) {
+	testCases := []struct {
+		name string
+		yaml string
+		err  string
+	}{
+		{
+			"ShouldErrOnInvalidBase64Secret",
+			"username: john\nissuer: Authelia\nalgorithm: SHA1\ndigits: 6\nperiod: 30\nsecret: '!!!invalid-base64!!!'\n",
+			"illegal base64 data at input byte 0",
+		},
+		{
+			"ShouldErrOnInvalidYAML",
+			"username: [[[",
+			"yaml: while parsing a flow node at line 1: did not find expected node content",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := &TOTPConfiguration{}
+
+			err := yaml.Unmarshal([]byte(tc.yaml), config)
+
+			if len(tc.err) != 0 {
+				assert.EqualError(t, err, tc.err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // FuncMap returns the template FuncMap commonly used in several templates.
@@ -100,6 +100,7 @@ func FuncMap() map[string]any {
 		"uuidv4":         FuncUUIDv4,
 		"urlquery":       url.QueryEscape,
 		"urlunquery":     url.QueryUnescape,
+		"urlqueryarg":    FuncURLQueryArg,
 		"glob":           filepath.Glob,
 		"walk":           FuncWalk,
 
@@ -408,7 +409,7 @@ func FuncDict(pairs ...any) map[string]any {
 			continue
 		}
 
-		m[key] = pairs[i+1]
+		m[key] = pairs[i+1] //nolint:gosec // This can only panic on invalid inputs which all occur in templating.
 	}
 
 	return m
@@ -615,7 +616,6 @@ func FuncDateInZone(format string, date any, zone string) string {
 		location *time.Location
 		err      error
 	)
-
 	if location, err = time.LoadLocation(zone); err != nil {
 		location = time.UTC
 	}
@@ -662,4 +662,13 @@ func FuncMustToDate(format, date string) (time.Time, error) {
 
 func FuncUnixEpoch(date time.Time) string {
 	return strconv.FormatInt(date.Unix(), 10)
+}
+
+func FuncURLQueryArg(raw, key string) (value string, err error) {
+	uri, err := url.ParseRequestURI(raw)
+	if err != nil {
+		return "", err
+	}
+
+	return uri.Query().Get(key), nil
 }

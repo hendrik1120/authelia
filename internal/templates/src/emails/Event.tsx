@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import {
 	Body,
 	Container,
@@ -7,11 +9,12 @@ import {
 	Preview,
 	Section,
 	Text,
-	Tailwind, Link,
-} from "@react-email/components";
-import * as React from "react";
+	Tailwind
+} from "react-email";
 
-export interface EventProps {
+import { Brand } from "../components/Brand";
+
+export interface Props {
 	title?: string;
     bodyEvent?: string;
     bodyPrefix?: string;
@@ -37,14 +40,14 @@ export const Event = ({
 						  detailsPrefix,
 						  detailsSuffix,
 	                      hidePreview,
-					  }: EventProps) => {
+					  }: Props) => {
 	return (
 		<Html lang="en" dir="ltr">
-			<Head />
-			{!hidePreview ? (
+            <Tailwind>
+            <Head />
+			{hidePreview ? null : (
 				<Preview>An important event has occurred with your account</Preview>
-			) : null}
-			<Tailwind>
+			)}
 				<Body className="bg-white my-auto mx-auto font-sans px-2">
 					<Container className="border border-solid border-[#eaeaea] rounded my-[40px] mx-auto p-[20px] max-w-[465px]">
 						{title ? <Text className="text-black text-[24px] font-normal text-center p-0 my-[30px] mx-0">{title}</Text> : null}
@@ -70,9 +73,7 @@ export const Event = ({
 							administrator.
 						</Text>
 					</Container>
-					<Text className="text-[#666666] text-[10px] leading-[24px] text-center text-muted">
-						Powered by <Link href="https://www.authelia.com" target="_blank" className="text-[#666666]">Authelia</Link>
-					</Text>
+					<Brand />
 				</Body>
 			</Tailwind>
 		</Html>
@@ -88,6 +89,6 @@ Event.PreviewProps = {
     bodyPrefix: "a",
     bodySuffix: "was added to your account.",
 	remoteIP: "127.0.0.1",
-} as EventProps;
+} as Props;
 
 export default Event;

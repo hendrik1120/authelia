@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 PNPM_MODULE="./node_modules/.modules.yaml"
 
-if [[ -f "${PNPM_MODULE}" ]]; then
+if [ -f "${PNPM_MODULE}" ]; then
   rm "${PNPM_MODULE}"
 fi
 
-pnpm install --frozen-lockfile && pnpm start
+pnpm install --ignore-scripts --frozen-lockfile && pnpm start

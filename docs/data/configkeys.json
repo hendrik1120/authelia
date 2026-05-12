@@ -90,6 +90,11 @@
         "env": "AUTHELIA_AUTHENTICATION_BACKEND_FILE_PASSWORD_SCRYPT_SALT_LENGTH"
     },
     {
+        "path": "authentication_backend.file.password.scrypt.variant",
+        "secret": false,
+        "env": "AUTHELIA_AUTHENTICATION_BACKEND_FILE_PASSWORD_SCRYPT_VARIANT"
+    },
+    {
         "path": "authentication_backend.file.password.sha2crypt.iterations",
         "secret": false,
         "env": "AUTHELIA_AUTHENTICATION_BACKEND_FILE_PASSWORD_SHA2CRYPT_ITERATIONS"
@@ -285,11 +290,6 @@
         "env": "AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PASSWORD_FILE"
     },
     {
-        "path": "authentication_backend.ldap.permit_feature_detection_failure",
-        "secret": false,
-        "env": "AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PERMIT_FEATURE_DETECTION_FAILURE"
-    },
-    {
         "path": "authentication_backend.ldap.permit_referrals",
         "secret": false,
         "env": "AUTHELIA_AUTHENTICATION_BACKEND_LDAP_PERMIT_REFERRALS"
@@ -483,6 +483,11 @@
         "path": "identity_providers.oidc.lifespans.authorize_code",
         "secret": false,
         "env": "AUTHELIA_IDENTITY_PROVIDERS_OIDC_LIFESPANS_AUTHORIZE_CODE"
+    },
+    {
+        "path": "identity_providers.oidc.lifespans.device_code",
+        "secret": false,
+        "env": "AUTHELIA_IDENTITY_PROVIDERS_OIDC_LIFESPANS_DEVICE_CODE"
     },
     {
         "path": "identity_providers.oidc.lifespans.id_token",
@@ -808,6 +813,16 @@
         "path": "server.endpoints.enable_pprof",
         "secret": false,
         "env": "AUTHELIA_SERVER_ENDPOINTS_ENABLE_PPROF"
+    },
+    {
+        "path": "server.endpoints.rate_limits.openid_connect_pushed_authorization_request.enable",
+        "secret": false,
+        "env": "AUTHELIA_SERVER_ENDPOINTS_RATE_LIMITS_OPENID_CONNECT_PUSHED_AUTHORIZATION_REQUEST_ENABLE"
+    },
+    {
+        "path": "server.endpoints.rate_limits.openid_connect_token.enable",
+        "secret": false,
+        "env": "AUTHELIA_SERVER_ENDPOINTS_RATE_LIMITS_OPENID_CONNECT_TOKEN_ENABLE"
     },
     {
         "path": "server.endpoints.rate_limits.reset_password_finish.enable",
@@ -1250,6 +1265,11 @@
         "env": "AUTHELIA_WEBAUTHN_ENABLE_PASSKEY_LOGIN"
     },
     {
+        "path": "webauthn.experimental_enable_passkey_upgrade",
+        "secret": false,
+        "env": "AUTHELIA_WEBAUTHN_EXPERIMENTAL_ENABLE_PASSKEY_UPGRADE"
+    },
+    {
         "path": "webauthn.experimental_enable_passkey_uv_two_factors",
         "secret": false,
         "env": "AUTHELIA_WEBAUTHN_EXPERIMENTAL_ENABLE_PASSKEY_UV_TWO_FACTORS"
@@ -1258,6 +1278,11 @@
         "path": "webauthn.filtering.prohibit_backup_eligibility",
         "secret": false,
         "env": "AUTHELIA_WEBAUTHN_FILTERING_PROHIBIT_BACKUP_ELIGIBILITY"
+    },
+    {
+        "path": "webauthn.metadata.cache_policy",
+        "secret": false,
+        "env": "AUTHELIA_WEBAUTHN_METADATA_CACHE_POLICY"
     },
     {
         "path": "webauthn.metadata.enabled",

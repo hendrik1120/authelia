@@ -220,19 +220,19 @@ func ParseX509FromPEMRecursive(data []byte) (decoded any, err error) {
 
 		switch {
 		case block == nil:
-			return nil, fmt.Errorf("failed to parse PEM blocks: data does not appear to be PEM encoded")
+			return nil, fmt.Errorf("error occurred attempting to parse PEM block: either no PEM block was supplied or it was malformed")
 		case multi || n != 0:
 			switch block.Type {
 			case BlockTypeCertificate:
 				var certificate *x509.Certificate
 
 				if certificate, err = x509.ParseCertificate(block.Bytes); err != nil {
-					return nil, fmt.Errorf("failed to parse PEM blocks: data contains multiple blocks but #%d had an error during parsing: %w", i, err)
+					return nil, fmt.Errorf("error occurred attempting to parse PEM block: data contains multiple blocks but #%d had an error during parsing: %w", i, err)
 				}
 
 				certificates = append(certificates, certificate)
 			default:
-				return nil, fmt.Errorf("failed to parse PEM blocks: data contains multiple blocks but #%d has a '%s' block type and should have a '%s' block type", i, block.Type, BlockTypeCertificate)
+				return nil, fmt.Errorf("error occurred attempting to parse PEM block: data contains multiple blocks but #%d has a '%s' block type and should have a '%s' block type", i, block.Type, BlockTypeCertificate)
 			}
 
 			multi = true
@@ -290,8 +290,8 @@ func ParsePEMBlock(block *pem.Block) (key any, err error) {
 	}
 }
 
-// CastX509AsCertificate converts an interface to an *x509.Certificate.
-func CastX509AsCertificate(c any) (certificate *x509.Certificate, ok bool) {
+// AssertToX509Certificate converts an interface to an *x509.Certificate.
+func AssertToX509Certificate(c any) (certificate *x509.Certificate, ok bool) {
 	switch t := c.(type) {
 	case x509.Certificate:
 		return &t, true
@@ -340,11 +340,20 @@ func NewTLSConfig(config *schema.TLS, rootCAs *x509.CertPool) (tlsConfig *tls.Co
 	}
 }
 
-// NewX509CertPool generates a x509.CertPool from the system PKI and the directory specified.
+// NewX509CertPool generates a x509.CertPool from the system PKI and the directory specified using the standard factory.
 func NewX509CertPool(directory string) (certPool *x509.CertPool, warnings []error, errors []error) {
-	var err error
+	return NewX509CertPoolWithFactory(directory, &StandardX509SystemCertPoolFactory{})
+}
 
-	if certPool, err = x509.SystemCertPool(); err != nil {
+// NewX509CertPoolWithFactory generates a x509.CertPool from the system PKI and the directory specified using a specific
+// factory.
+func NewX509CertPoolWithFactory(directory string, factory X509SystemCertPoolFactory) (certPool *x509.CertPool, warnings []error, errors []error) {
+	if factory == nil {
+		return nil, nil, []error{fmt.Errorf("failed to create x509 cert pool as no factory was provided")}
+	}
+
+	var err error
+	if certPool, err = factory.SystemCertPool(); err != nil {
 		warnings = append(warnings, fmt.Errorf("could not load system certificate pool which may result in untrusted certificate issues: %v", err))
 		certPool = x509.NewCertPool()
 	}
@@ -376,7 +385,7 @@ func NewX509CertPool(directory string) (certPool *x509.CertPool, warnings []erro
 			var data []byte
 
 			if data, err = os.ReadFile(certPath); err != nil {
-				errors = append(errors, fmt.Errorf("could not read certificate %v", err))
+				errors = append(errors, fmt.Errorf("error occurred trying to read certificate: %w", err))
 			} else if ok := certPool.AppendCertsFromPEM(data); !ok {
 				errors = append(errors, fmt.Errorf("could not import certificate %s", entry.Name()))
 			}
@@ -402,7 +411,7 @@ func WriteCertificateBytesAsPEMToPath(path string, csr bool, certs ...[]byte) (e
 		return err
 	}
 
-	return nil
+	return out.Close()
 }
 
 // WriteCertificateBytesAsPEMToWriter writes a certificate/csr to a io.Writer in the PEM format.
@@ -419,6 +428,16 @@ func WriteCertificateBytesAsPEMToWriter(wr io.Writer, csr bool, certs ...[]byte)
 	}
 
 	return WritePEMBlocksToWriter(wr, blocks...)
+}
+
+// WriteKeyToPEM writes a key that can be encoded as a PEM to a file in the PEM format.
+func WriteKeyToPEM(key any, path string, legacy bool) (err error) {
+	block, err := PEMBlockFromX509Key(key, legacy)
+	if err != nil {
+		return err
+	}
+
+	return WritePEMBlocksToPath(path, block)
 }
 
 // WritePEMBlocksToPath writes a set of *pem.Blocks to a file.
@@ -438,24 +457,14 @@ func WritePEMBlocksToPath(path string, blocks ...*pem.Block) (err error) {
 	return out.Close()
 }
 
-func WritePEMBlocksToWriter(wr io.Writer, blocks ...*pem.Block) (err error) {
+func WritePEMBlocksToWriter(w io.Writer, blocks ...*pem.Block) (err error) {
 	for _, block := range blocks {
-		if err = pem.Encode(wr, block); err != nil {
+		if err = pem.Encode(w, block); err != nil {
 			return err
 		}
 	}
 
 	return nil
-}
-
-// WriteKeyToPEM writes a key that can be encoded as a PEM to a file in the PEM format.
-func WriteKeyToPEM(key any, path string, legacy bool) (err error) {
-	block, err := PEMBlockFromX509Key(key, legacy)
-	if err != nil {
-		return err
-	}
-
-	return WritePEMBlocksToPath(path, block)
 }
 
 // PEMBlockFromX509Key turns a PublicKey or PrivateKey into a pem.Block.
@@ -502,6 +511,15 @@ func PEMBlockFromX509Key(key any, legacy bool) (block *pem.Block, err error) {
 	case *ecdsa.PublicKey, ed25519.PublicKey:
 		blockType = BlockTypePKIXPublicKey
 		data, err = x509.MarshalPKIXPublicKey(k)
+	case *x509.Certificate:
+		blockType = BlockTypeCertificate
+		data = k.Raw
+	case *x509.CertificateRequest:
+		blockType = BlockTypeCertificateRequest
+		data = k.Raw
+	case *x509.RevocationList:
+		blockType = BlockTypeX509CRL
+		data = k.Raw
 	default:
 		err = fmt.Errorf("failed to match key type: %T", k)
 	}
@@ -511,8 +529,9 @@ func PEMBlockFromX509Key(key any, legacy bool) (block *pem.Block, err error) {
 	}
 
 	return &pem.Block{
-		Type:  blockType,
-		Bytes: data,
+		Type:    blockType,
+		Headers: make(map[string]string),
+		Bytes:   data,
 	}, nil
 }
 
@@ -720,4 +739,55 @@ func TLSVersionFromBytesString(input string) (version int, err error) {
 	default:
 		return -1, fmt.Errorf("tls version 0x%x is unknown", version)
 	}
+}
+
+// IsInsecureCipherSuite returns true if a cipher suite is insecure.
+func IsInsecureCipherSuite(cipherSuite uint16) bool {
+	for _, suite := range tls.InsecureCipherSuites() {
+		if suite.ID == cipherSuite {
+			return true
+		}
+	}
+
+	return false
+}
+
+// UnsafeGetIntermediatesFromPeerCertificates attempts to find valid intermediates from the provided peer certificates.
+//
+// CRITICAL: This function should not be used for production code as it may not produce the correct output to properly
+// verify the chain. This function is intended to be used for testing purposes only.
+func UnsafeGetIntermediatesFromPeerCertificates(certs []*x509.Certificate, roots, ints *x509.CertPool) (intermediates *x509.CertPool) {
+	var err error
+
+	n := len(certs) - 1
+
+	opts := x509.VerifyOptions{}
+
+	if roots != nil {
+		opts.Roots = roots.Clone()
+	}
+
+	if ints != nil {
+		opts.Intermediates = ints.Clone()
+	}
+
+	for i := n; i >= 0; i-- {
+		if _, err = certs[i].Verify(opts); err == nil {
+			continue
+		}
+
+		if i == n {
+			// No certs in the chain are valid.
+			break
+		}
+
+		// Intentionally only add the certificates within the trust chain.
+		if certs[i+1].IsCA {
+			if _, err = certs[i+1].Verify(opts); err == nil {
+				opts.Intermediates.AddCert(certs[i+1])
+			}
+		}
+	}
+
+	return opts.Intermediates
 }

@@ -2,7 +2,7 @@
 title: "Measures"
 description: "An overview of the security measures Authelia implements."
 summary: "An overview of the security measures Authelia implements."
-date: 2018-08-26T23:46:15+02:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 420
@@ -16,7 +16,93 @@ seo:
   noindex: false # false (default) or true
 ---
 
+The following document describes many of the protections that exist within Authelia as well as protections that can be
+introduced to improve security.
+
+Some of the items in this guide contain a list of Measure Types. This legend describes what each of these types mean.
+A mix of types such as `In-built` and `Manual` means there is an in-built protection, and an additional manual
+protection the Administrator can employ.
+
+| Measure Type |                                   Description                                   |
+|:------------:|:-------------------------------------------------------------------------------:|
+|   In-built   |                  The measure is part of Authelia and automatic                  |
+| Customizable |    The measure can be configured by the Administrator to reduce the security    |
+| Configurable |   The measure can be configured by the Administrator to enhance the security    |
+|    Manual    | The measure contains a description of how an Administrator may improve security |
+|    Design    |        The measure is part of how Authelia is designed in a broad sense         |
+
+## Protection against return-oriented programming attacks and general hardening
+
+**Measure Types:** In-built
+
+Authelia is built with several non-default hardening options:
+
+- Built as a position independent executable which makes Return Oriented Programming (ROP) attacks
+  significantly more difficult to execute reliably.
+- Built with use of the procedure linkage table for external function calls which makes Return Oriented Programming
+  (ROP) attacks slightly more difficult to execute reliably.
+- Built as a dynamically linked binary with full relocation read-only support, making this and several
+other traditional binary weaknesses significantly more difficult to exploit.
+- Built with forced early symbol binding which significantly mitigates overwrite attacks to the global offset table.
+- Built with a reduced memory layout predictability.
+- Built with library function argument object size estimations enabled to ensure unsafe actions are aborted.
+- Built excluding unused libraries.
+
+## Protection against unnecessary attack surface
+
+**Measure Types:** In-built, Design
+
+Authelia takes a proactive approach to security and as such has spent countless hours reducing the attack surface by
+removing unnecessary components from our architecture.
+
+Specifically we've developed our own docker base container. This base container is specifically designed to have a low
+attack surface only having the minimum binaries required to support the container. You can verify the benefits of this
+proactive measure by using tools like [trivy](https://trivy.dev/latest/) on various containers. An example running it
+on Authelia is shown below:
+
+```shell
+docker pull docker.io/authelia/authelia:latest && \
+trivy image docker.io/authelia/authelia:latest && \
+docker run docker.io/authelia/authelia:latest authelia build-info
+```
+
+Example output:
+
+```text
+Report Summary
+
+┌───────────────────────────────────────────────────┬──────────┬─────────────────┬─────────┐
+│                      Target                       │   Type   │ Vulnerabilities │ Secrets │
+├───────────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤
+│ docker.io/authelia/authelia:latest (ubuntu 24.04) │  ubuntu  │        0        │    -    │
+├───────────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤
+│ app/authelia                                      │ gobinary │        0        │    -    │
+└───────────────────────────────────────────────────┴──────────┴─────────────────┴─────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+Last Tag: v4.39.8
+State: tagged clean
+Branch: v4.39.8
+Commit: 5d90442e07cc695c61036ac1a539c0b942ebc71d
+Build Number: 48388
+Build OS: linux
+Build Arch: amd64
+Build Compiler: gc
+Build Date: Tue, 02 Sep 2025 10:42:14 +1000
+Development: false
+Extra:
+
+Go:
+    Version: go1.25.0 X:nosynchashtriemap
+    Module Path: github.com/authelia/authelia/v4
+    Executable Path: github.com/authelia/authelia/v4/cmd/authelia
+```
+
 ## Protection against cookie theft
+
+**Measure Types:** In-built, Customizable
 
 Authelia sets several
 [cookie attributes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#attributes) to help prevent
@@ -32,6 +118,8 @@ Read about these attributes in detail on the
 
 ## Protection against multi-domain cookie attacks
 
+**Measure Types:** In-built, Manual
+
 Since Authelia uses multi-domain cookies to perform single sign-on, an attacker who poisoned a user's DNS cache can
 easily retrieve the user's cookies by making the user send a request to one of the attacker's IPs.
 
@@ -45,6 +133,8 @@ Note that using [HSTS] has consequences, and you should do adequate research int
 it. For example the [nginx blog] has a good article helping users understand it.
 
 ## Protection against username enumeration and password brute-force attacks
+
+**Measure Types:** In-built, Customizable
 
 Authelia adaptively delays authentication attempts based on the mean (average) of the previous 10 successful attempts
 in addition to a small random interval of time. The result of this delay is that it makes it incredibly difficult to
@@ -61,7 +151,19 @@ the added effect of creating an additional delay for all authentication attempts
 attack will take, this combined with regulation greatly delays brute-force attacks and the effectiveness of them in
 general.
 
+## Protection against general brute-force attacks
+
+**Measure Types:** In-built, Customizable
+
+Authelia implements a tokenized bucket rate limiter on specific endpoints which greatly reduces the chances these
+endpoints can be brute-forced for various outcomes including guessing secret values, or inundating an inbox with emails.
+
+These rate limiters are applied on a per-IP basis and can be
+[configured](../../configuration/miscellaneous/server-endpoint-rate-limits.md) depending on a particular use case.
+
 ## Protections against password brute-force attacks
+
+**Measure Types:** In-built, Customizable
 
 Authelia implements a variety of measures to prevent an attacker brute-forcing passwords if they somehow obtain the file
 used by the file authentication provider.
@@ -77,29 +179,15 @@ support SHA512, which previously was the default.
 
 Secondly Authelia uses salting with all hashing algorithms. These salts are generated with a random string generator,
 which is seeded every time it's used by a cryptographically secure 1024bit prime number. This ensures that even if an
-attacker obtains the file, each password has to be brute forced individually.
+attacker obtains the file, each password has to be brute-forced individually.
 
 Lastly Authelia's implementation of Argon2id is highly tunable. You can tune the key length, salt used, iterations
 (time), parallelism, and memory usage. To read more about this, please read how to
 [configure](../../configuration/first-factor/file.md) file authentication.
 
-## Protection against request brute-force attacks
+## Protection against stale identity information
 
-Authelia implements a tokenized bucket rate limiter on specific endpoints which greatly reduces the chances these
-endpoints can be brute-forced for various outcomes including guessing secret values, or inundating an inbox with emails.
-
-These rate limiters are applied on a per-IP basis and can be
-[configured](../../configuration/miscellaneous/server-endpoint-rate-limits.md) depending on a particular use case.
-
-## Protections against return oriented programming attacks and general hardening
-
-Authelia is built as a position independent executable which makes Return Oriented Programming (ROP) attacks
-significantly more difficult to execute reliably.
-
-In addition, it is built as a dynamically linked binary with full relocation read-only support, making this and several
-other traditional binary weaknesses significantly more difficult to exploit.
-
-## User profile and group membership always kept up-to-date (LDAP authentication provider)
+**Measure Types:** In-built, Customizable
 
 This measure is unrelated to the File authentication provider.
 
@@ -117,23 +205,39 @@ this.
 These protections can be [tuned](../../configuration/first-factor/ldap.md#refresh-interval) according to your security
 policy by changing refresh_interval, however we believe that 5 minutes is a fairly safe interval.
 
-## Storage security measures
+## Protection against storage exfiltration and manipulation
 
-We force users to encrypt vulnerable data stored in the database. It is strongly advised you do not give this encryption
-key to anyone. In the instance of a database installation that multiple users have access to, you should aim to ensure
-that users who have access to the database do not also have access to this key.
+**Measure Types:** In-built
+
+We use encryption and HMAC signatures to protect vulnerable data stored in the database. It is strongly advised you do
+not give the storage encryption key to anyone. In the instance of a database installation that multiple users have
+access to, you should aim to ensure that users who have access to the database do not also have access to the encryption
+key.
 
 The encrypted data in the database is as follows:
 
-|               Table               |    Column    |                                                Rational                                                |
+|               Table               |  Column(s)   |                                               Rationale                                                |
 |:---------------------------------:|:------------:|:------------------------------------------------------------------------------------------------------:|
+|            encryption             |    value     | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
+|            cached_data            |    value     | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
+|           one_time_code           |     code     | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
 |        totp_configurations        |    secret    | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
 |         webauthn_devices          |  public_key  |                     Prevents [Bad Actors](#bad-actors) from compromising security                      |
-| oauth2_authorization_code_session | session_data |                     Prevents [Bad Actors](#bad-actors) from compromising security                      |
-|    oauth2_access_token_session    | session_data |                     Prevents [Bad Actors](#bad-actors) from compromising security                      |
-|   oauth2_refresh_token_session    | session_data |                     Prevents [Bad Actors](#bad-actors) from compromising security                      |
-|    oauth2_pkce_request_session    | session_data |                     Prevents [Bad Actors](#bad-actors) from compromising security                      |
-|   oauth2_openid_connect_session   | session_data |                     Prevents [Bad Actors](#bad-actors) from compromising security                      |
+| oauth2_authorization_code_session | session_data | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
+|    oauth2_access_token_session    | session_data | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
+|   oauth2_refresh_token_session    | session_data | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
+|    oauth2_pkce_request_session    | session_data | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
+|   oauth2_openid_connect_session   | session_data | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
+|        oauth2_par_context         | session_data | Prevents a [Leaked Database](#leaked-database) or [Bad Actors](#bad-actors) from compromising security |
+
+The HMAC signatures stored in the database use the encrypted key stored in the `encryption` table where the `name`
+column matches the table below. We both ensure the keys are encrypted and use unique keys for each purpose to ensure
+any potential for brute-forcing the key is low.
+
+|     Table     |  Column   |   Key Name   |                         Notes                         |
+|:-------------:|:---------:|:------------:|:-----------------------------------------------------:|
+| one_time_code | signature | hmac_key_otc |    Used to perform a fast lookup of One-Time Codes    |
+| totp_history  |   step    | hmac_key_otp | Used to save the step of every One-Time Password used |
 
 ### Leaked Database
 
@@ -439,8 +543,8 @@ changes to take effect.
 Authelia will run as the root user and group by default, there are two options available to run as a non-root user and
 group.
 
-It is recommended which ever approach you take that to secure the sensitive files Authelia requires access to that you
-make sure the chmod of the files does not inadvertently allow read access to the files by users who do not need access
+It is recommended, which ever approach you take, in order to secure the sensitive files Authelia requires access to, that you
+make sure that the mode (chmod) of the files does not inadvertently allow read access to the files by users who do not need access
 to them.
 
 Examples:

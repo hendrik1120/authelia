@@ -1,5 +1,7 @@
-import React, { MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import {
     Alert,
     AlertTitle,
@@ -8,22 +10,22 @@ import {
     CircularProgress,
     FormControl,
     FormControlLabel,
+    IconButton,
+    InputAdornment,
     Link,
-    Theme,
 } from "@mui/material";
-import Grid from "@mui/material/Grid2";
+import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
-import makeStyles from "@mui/styles/makeStyles";
 import { BroadcastChannel } from "broadcast-channel";
-import classnames from "classnames";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { ResetPasswordStep1Route } from "@constants/Routes";
 import { RedirectionURL, RequestMethod } from "@constants/SearchParams";
-import { useNotifications } from "@hooks/NotificationsContext";
+import { useNotifications } from "@contexts/NotificationsContext";
+import { useFlow } from "@hooks/Flow";
+import { useUserCode } from "@hooks/OpenIDConnect";
 import { useQueryParam } from "@hooks/QueryParam";
-import { useWorkflow } from "@hooks/Workflow";
 import LoginLayout from "@layouts/LoginLayout";
 import { IsCapsLockModified } from "@services/CapsLock";
 import { postFirstFactor } from "@services/Password";
@@ -38,7 +40,7 @@ export interface Props {
 
     onAuthenticationStart: () => void;
     onAuthenticationStop: () => void;
-    onAuthenticationSuccess: (redirectURL: string | undefined) => void;
+    onAuthenticationSuccess: (_redirectURL: string | undefined) => void;
     onChannelStateChange: () => void;
 }
 
@@ -48,7 +50,8 @@ const FirstFactorForm = function (props: Props) {
     const navigate = useNavigate();
     const redirectionURL = useQueryParam(RedirectionURL);
     const requestMethod = useQueryParam(RequestMethod);
-    const [workflow, workflowID] = useWorkflow();
+    const { flow, id: flowID, subflow } = useFlow();
+    const userCode = useUserCode();
     const { createErrorNotification } = useNotifications();
 
     const loginChannel = useMemo(() => new BroadcastChannel<boolean>("login"), []);
@@ -57,27 +60,44 @@ const FirstFactorForm = function (props: Props) {
     const [username, setUsername] = useState("");
     const [usernameError, setUsernameError] = useState(false);
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [passwordCapsLock, setPasswordCapsLock] = useState(false);
     const [passwordCapsLockPartial, setPasswordCapsLockPartial] = useState(false);
     const [passwordError, setPasswordError] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const usernameRef = useRef() as MutableRefObject<HTMLInputElement>;
-    const passwordRef = useRef() as MutableRefObject<HTMLInputElement>;
+    const usernameRef = useRef<HTMLInputElement | null>(null);
+    const passwordRef = useRef<HTMLInputElement | null>(null);
 
-    const styles = useStyles();
+    const focusUsername = useCallback(() => {
+        if (usernameRef.current === null) return;
 
-    useEffect(() => {
-        const timeout = setTimeout(() => usernameRef.current.focus(), 10);
-        return () => clearTimeout(timeout);
+        usernameRef.current.focus();
     }, [usernameRef]);
 
+    const focusPassword = useCallback(() => {
+        if (passwordRef.current === null) return;
+
+        passwordRef.current.focus();
+    }, [passwordRef]);
+
     useEffect(() => {
-        loginChannel.addEventListener("message", (authenticated) => {
+        const timeout = setTimeout(() => focusUsername(), 10);
+        return () => clearTimeout(timeout);
+    }, [focusUsername]);
+
+    useEffect(() => {
+        const handleMessage = (authenticated: boolean) => {
             if (authenticated) {
                 props.onChannelStateChange();
             }
-        });
+        };
+
+        loginChannel.addEventListener("message", handleMessage);
+
+        return () => {
+            loginChannel.removeEventListener("message", handleMessage);
+        };
     }, [loginChannel, redirectionURL, props]);
 
     const disabled = props.disabled;
@@ -109,8 +129,10 @@ const FirstFactorForm = function (props: Props) {
                 rememberMe,
                 redirectionURL,
                 requestMethod,
-                workflow,
-                workflowID,
+                flowID,
+                flow,
+                subflow,
+                userCode,
             );
 
             setLoading(false);
@@ -123,25 +145,28 @@ const FirstFactorForm = function (props: Props) {
             setLoading(false);
             props.onAuthenticationStop();
             setPassword("");
-            passwordRef.current.focus();
+            focusPassword();
         }
     }, [
-        createErrorNotification,
-        loginChannel,
+        username,
         password,
         props,
-        redirectionURL,
         rememberMe,
+        redirectionURL,
         requestMethod,
+        flowID,
+        flow,
+        subflow,
+        userCode,
+        loginChannel,
+        createErrorNotification,
         translate,
-        username,
-        workflow,
-        workflowID,
+        focusPassword,
     ]);
 
     const handleResetPasswordClick = () => {
         if (props.resetPassword) {
-            if (props.resetPasswordCustomURL !== "") {
+            if (props.resetPasswordCustomURL) {
                 window.open(props.resetPasswordCustomURL);
             } else {
                 navigate(ResetPasswordStep1Route);
@@ -150,7 +175,7 @@ const FirstFactorForm = function (props: Props) {
     };
 
     const handleUsernameKeyDown = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (event.key === "Enter") {
                 if (!username.length) {
                     setUsernameError(true);
@@ -158,30 +183,30 @@ const FirstFactorForm = function (props: Props) {
                     handleSignIn().catch(console.error);
                 } else {
                     setUsernameError(false);
-                    passwordRef.current.focus();
+                    focusPassword();
                 }
             }
         },
-        [handleSignIn, password.length, username.length],
+        [focusPassword, handleSignIn, password.length, username.length],
     );
 
     const handlePasswordKeyDown = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (event.key === "Enter") {
                 if (!username.length) {
-                    usernameRef.current.focus();
+                    focusUsername();
                 } else if (!password.length) {
-                    passwordRef.current.focus();
+                    focusPassword();
                 }
                 handleSignIn().catch(console.error);
                 event.preventDefault();
             }
         },
-        [handleSignIn, password.length, username.length],
+        [focusPassword, focusUsername, handleSignIn, password.length, username.length],
     );
 
     const handlePasswordKeyUp = useCallback(
-        (event: React.KeyboardEvent<HTMLDivElement>) => {
+        (event: KeyboardEvent<HTMLDivElement>) => {
             if (password.length <= 1) {
                 setPasswordCapsLock(false);
                 setPasswordCapsLockPartial(false);
@@ -205,17 +230,17 @@ const FirstFactorForm = function (props: Props) {
     );
 
     const handleRememberMeKeyDown = useCallback(
-        (event: React.KeyboardEvent<HTMLButtonElement>) => {
+        (event: KeyboardEvent<HTMLButtonElement>) => {
             if (event.key === "Enter") {
                 if (!username.length) {
-                    usernameRef.current.focus();
+                    focusUsername();
                 } else if (!password.length) {
-                    passwordRef.current.focus();
+                    focusPassword();
                 }
                 handleSignIn().catch(console.error);
             }
         },
-        [handleSignIn, password.length, username.length],
+        [focusPassword, focusUsername, handleSignIn, password.length, username.length],
     );
 
     return (
@@ -253,10 +278,43 @@ const FirstFactorForm = function (props: Props) {
                             error={passwordError}
                             onChange={(v) => setPassword(v.target.value)}
                             onFocus={() => setPasswordError(false)}
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             autoComplete="current-password"
                             onKeyDown={handlePasswordKeyDown}
                             onKeyUp={handlePasswordKeyUp}
+                            slotProps={{
+                                input: {
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                aria-label="toggle password visibility"
+                                                edge="end"
+                                                size="large"
+                                                onMouseDown={() => setShowPassword(true)}
+                                                onMouseUp={() => setShowPassword(false)}
+                                                onMouseLeave={() => setShowPassword(false)}
+                                                onTouchStart={() => setShowPassword(true)}
+                                                onTouchEnd={() => setShowPassword(false)}
+                                                onTouchCancel={() => setShowPassword(false)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === " ") {
+                                                        setShowPassword(true);
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                onKeyUp={(e) => {
+                                                    if (e.key === " ") {
+                                                        setShowPassword(false);
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                            >
+                                                {showPassword ? <Visibility /> : <VisibilityOff />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
                         />
                     </Grid>
                     {passwordCapsLock ? (
@@ -270,7 +328,15 @@ const FirstFactorForm = function (props: Props) {
                         </Grid>
                     ) : null}
                     {props.rememberMe ? (
-                        <Grid size={{ xs: 12 }} className={classnames(styles.actionRow)}>
+                        <Grid
+                            size={{ xs: 12 }}
+                            sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                marginBottom: (theme) => theme.spacing(-1),
+                                marginTop: (theme) => theme.spacing(-1),
+                            }}
+                        >
                             <FormControlLabel
                                 control={
                                     <Checkbox
@@ -283,7 +349,7 @@ const FirstFactorForm = function (props: Props) {
                                         color="primary"
                                     />
                                 }
-                                className={styles.rememberMe}
+                                sx={{ flexGrow: 1 }}
                                 label={translate("Remember me")}
                             />
                         </Grid>
@@ -293,10 +359,10 @@ const FirstFactorForm = function (props: Props) {
                             id="sign-in-button"
                             variant="contained"
                             color="primary"
-                            fullWidth
+                            fullWidth={true}
+                            endIcon={loading ? <CircularProgress size={20} /> : null}
                             disabled={disabled}
                             onClick={handleSignIn}
-                            endIcon={loading ? <CircularProgress size={20} /> : null}
                         >
                             {translate("Sign in")}
                         </Button>
@@ -316,12 +382,21 @@ const FirstFactorForm = function (props: Props) {
                         />
                     ) : null}
                     {props.resetPassword ? (
-                        <Grid size={{ xs: 12 }} className={classnames(styles.actionRow, styles.flexEnd)}>
+                        <Grid
+                            size={{ xs: 12 }}
+                            sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "flex-end",
+                                marginBottom: (theme) => theme.spacing(-1),
+                                marginTop: (theme) => theme.spacing(-1),
+                            }}
+                        >
                             <Link
                                 id="reset-password-button"
                                 component="button"
                                 onClick={handleResetPasswordClick}
-                                className={styles.resetLink}
+                                sx={{ cursor: "pointer", paddingBottom: "13.5px", paddingTop: "13.5px" }}
                                 underline="hover"
                             >
                                 {translate("Reset password?")}
@@ -333,25 +408,5 @@ const FirstFactorForm = function (props: Props) {
         </LoginLayout>
     );
 };
-
-const useStyles = makeStyles((theme: Theme) => ({
-    actionRow: {
-        display: "flex",
-        flexDirection: "row",
-        marginTop: theme.spacing(-1),
-        marginBottom: theme.spacing(-1),
-    },
-    resetLink: {
-        cursor: "pointer",
-        paddingTop: 13.5,
-        paddingBottom: 13.5,
-    },
-    rememberMe: {
-        flexGrow: 1,
-    },
-    flexEnd: {
-        justifyContent: "flex-end",
-    },
-}));
 
 export default FirstFactorForm;

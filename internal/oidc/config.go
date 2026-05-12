@@ -9,14 +9,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
+
 	oauthelia2 "authelia.com/provider/oauth2"
 	"authelia.com/provider/oauth2/handler/oauth2"
 	"authelia.com/provider/oauth2/handler/openid"
 	"authelia.com/provider/oauth2/handler/par"
 	"authelia.com/provider/oauth2/handler/pkce"
+	"authelia.com/provider/oauth2/handler/rfc8628"
 	"authelia.com/provider/oauth2/i18n"
 	"authelia.com/provider/oauth2/token/jwt"
-	"github.com/hashicorp/go-retryablehttp"
 
 	"github.com/authelia/authelia/v4/internal/configuration/schema"
 	"github.com/authelia/authelia/v4/internal/logging"
@@ -32,6 +34,7 @@ func NewConfig(config *schema.IdentityProvidersOpenIDConnect, issuer *Issuer, te
 		MinParameterEntropy:        config.MinimumParameterEntropy,
 		Lifespans: LifespansConfig{
 			IdentityProvidersOpenIDConnectLifespanToken: config.Lifespans.IdentityProvidersOpenIDConnectLifespanToken,
+			RFC8628Code: config.Lifespans.DeviceCode,
 		},
 		ProofKeyCodeExchange: ProofKeyCodeExchangeConfig{
 			Enforce:                   config.EnforcePKCE == "always",
@@ -61,9 +64,9 @@ func NewConfig(config *schema.IdentityProvidersOpenIDConnect, issuer *Issuer, te
 	}
 
 	if config.Discovery.JWTResponseAccessTokens {
-		c.Strategy.Core = oauth2.NewCoreStrategy(c, "authelia_%s_", c.Strategy.JWT)
+		c.Strategy.Core = oauth2.NewCoreStrategy(c, fmtAutheliaOpaqueOAuth2Token, c.Strategy.JWT)
 	} else {
-		c.Strategy.Core = oauth2.NewCoreStrategy(c, "authelia_%s_", nil)
+		c.Strategy.Core = oauth2.NewCoreStrategy(c, fmtAutheliaOpaqueOAuth2Token, nil)
 	}
 
 	c.Strategy.OpenID = &openid.DefaultStrategy{
@@ -152,13 +155,14 @@ type HashConfig struct {
 
 // StrategyConfig holds specific oauthelia2.Configurator information for various strategies.
 type StrategyConfig struct {
-	Core                 oauth2.CoreStrategy
-	OpenID               openid.OpenIDConnectTokenStrategy
-	Audience             oauthelia2.AudienceMatchingStrategy
-	Scope                oauthelia2.ScopeStrategy
-	JWT                  jwt.Strategy
-	JWKSFetcher          jwt.JWKSFetcherStrategy
-	ClientAuthentication oauthelia2.ClientAuthenticationStrategy
+	Core                        oauth2.CoreStrategy
+	OpenID                      openid.OpenIDConnectTokenStrategy
+	Audience                    oauthelia2.AudienceMatchingStrategy
+	Scope                       oauthelia2.ScopeStrategy
+	JWT                         jwt.Strategy
+	JWKSFetcher                 jwt.JWKSFetcherStrategy
+	ClientAuthentication        oauthelia2.ClientAuthenticationStrategy
+	AuthorizeErrorFieldResponse oauthelia2.AuthorizeErrorFieldResponseStrategy
 }
 
 // JWTAccessTokenConfig represents the JWT Access Token config.
@@ -227,6 +231,11 @@ type ProofKeyCodeExchangeConfig struct {
 	AllowPlainChallengeMethod bool
 }
 
+type StatelessJWTStrategy struct {
+	jwt.Strategy
+	oauth2.CoreStrategy
+}
+
 // LoadHandlers reloads the handlers based on the current configuration.
 func (c *Config) LoadHandlers(store *Store) {
 	validator := openid.NewOpenIDConnectRequestValidator(c.Strategy.JWT, c)
@@ -235,8 +244,11 @@ func (c *Config) LoadHandlers(store *Store) {
 
 	if c.JWTAccessToken.Enable && c.JWTAccessToken.EnableStatelessIntrospection {
 		statelessJWT = &oauth2.StatelessJWTValidator{
-			Strategy: c.Strategy.JWT,
-			Config:   c,
+			StatelessJWTStrategy: &StatelessJWTStrategy{
+				Strategy:     c.Strategy.JWT,
+				CoreStrategy: c.Strategy.Core,
+			},
+			Config: c,
 		}
 	}
 
@@ -267,6 +279,30 @@ func (c *Config) LoadHandlers(store *Store) {
 			RefreshTokenStrategy:   c.Strategy.Core,
 			TokenRevocationStorage: store,
 			Config:                 c,
+		},
+		&rfc8628.DeviceAuthorizeHandler{
+			Storage:  store,
+			Strategy: c.Strategy.Core,
+			Config:   c,
+		},
+		&rfc8628.UserAuthorizeHandler{
+			Storage:  store,
+			Strategy: c.Strategy.Core,
+			Config:   c,
+		},
+		&rfc8628.DeviceAuthorizeTokenEndpointHandler{
+			GenericCodeTokenEndpointHandler: oauth2.GenericCodeTokenEndpointHandler{
+				CodeTokenEndpointHandler: &rfc8628.DeviceCodeTokenHandler{
+					Strategy: c.Strategy.Core,
+					Storage:  store,
+					Config:   c,
+				},
+				AccessTokenStrategy:    c.Strategy.Core,
+				RefreshTokenStrategy:   c.Strategy.Core,
+				CoreStorage:            store,
+				TokenRevocationStorage: store,
+				Config:                 c,
+			},
 		},
 
 		&openid.OpenIDConnectExplicitHandler{
@@ -314,6 +350,19 @@ func (c *Config) LoadHandlers(store *Store) {
 				IDTokenStrategy: c.Strategy.OpenID,
 			},
 			Config: c,
+		},
+		&openid.OpenIDConnectDeviceAuthorizeHandler{
+			OpenIDConnectRequestStorage:   store,
+			OpenIDConnectRequestValidator: validator,
+			CodeTokenEndpointHandler: &rfc8628.DeviceCodeTokenHandler{
+				Strategy: c.Strategy.Core,
+				Storage:  store,
+				Config:   c,
+			},
+			Config: c,
+			IDTokenHandleHelper: &openid.IDTokenHandleHelper{
+				IDTokenStrategy: c.Strategy.OpenID,
+			},
 		},
 
 		statelessJWT,
@@ -533,13 +582,13 @@ func (c *Config) GetJWTSecuredAuthorizeResponseModeIssuer(ctx context.Context) s
 	return c.GetIssuerFallback(ctx, c.Issuers.JWTSecuredResponseMode)
 }
 
-// GetAuthorizeCodeLifespan returns the authorization code lifespan.
-func (c *Config) GetAuthorizeCodeLifespan(ctx context.Context) (lifespan time.Duration) {
-	if c.Lifespans.AuthorizeCode.Seconds() <= 0 {
-		c.Lifespans.AuthorizeCode = lifespanAuthorizeCodeDefault
+// GetAccessTokenLifespan returns the access token lifespan.
+func (c *Config) GetAccessTokenLifespan(ctx context.Context) (lifespan time.Duration) {
+	if c.Lifespans.AccessToken.Seconds() <= 0 {
+		c.Lifespans.AccessToken = lifespanTokenDefault
 	}
 
-	return c.Lifespans.AuthorizeCode
+	return c.Lifespans.AccessToken
 }
 
 // GetRefreshTokenLifespan returns the refresh token lifespan.
@@ -560,13 +609,39 @@ func (c *Config) GetIDTokenLifespan(ctx context.Context) (lifespan time.Duration
 	return c.Lifespans.IDToken
 }
 
-// GetAccessTokenLifespan returns the access token lifespan.
-func (c *Config) GetAccessTokenLifespan(ctx context.Context) (lifespan time.Duration) {
-	if c.Lifespans.AccessToken.Seconds() <= 0 {
-		c.Lifespans.AccessToken = lifespanTokenDefault
+// GetAuthorizeCodeLifespan returns the authorization code lifespan.
+func (c *Config) GetAuthorizeCodeLifespan(ctx context.Context) (lifespan time.Duration) {
+	if c.Lifespans.AuthorizeCode.Seconds() <= 0 {
+		c.Lifespans.AuthorizeCode = lifespanAuthorizeCodeDefault
 	}
 
-	return c.Lifespans.AccessToken
+	return c.Lifespans.AuthorizeCode
+}
+
+func (c *Config) GetRFC8628CodeLifespan(ctx context.Context) time.Duration {
+	if c.Lifespans.RFC8628Code.Seconds() <= 0 {
+		c.Lifespans.RFC8628Code = lifespanRFC8628CodeDefault
+	}
+
+	return c.Lifespans.RFC8628Code
+}
+
+// GetPushedAuthorizeContextLifespan is the lifespan of the short-lived PAR context.
+func (c *Config) GetPushedAuthorizeContextLifespan(ctx context.Context) (lifespan time.Duration) {
+	if c.PAR.ContextLifespan.Seconds() <= 0 {
+		c.PAR.ContextLifespan = lifespanPARContextDefault
+	}
+
+	return c.PAR.ContextLifespan
+}
+
+// GetVerifiableCredentialsNonceLifespan is the lifespan of the verifiable credentials' nonce.
+func (c *Config) GetVerifiableCredentialsNonceLifespan(ctx context.Context) (lifespan time.Duration) {
+	if c.Lifespans.VerifiableCredentialsNonce.Seconds() == 0 {
+		c.Lifespans.VerifiableCredentialsNonce = lifespanVerifiableCredentialsNonceDefault
+	}
+
+	return c.Lifespans.VerifiableCredentialsNonce
 }
 
 // GetTokenEntropy returns the token entropy.
@@ -741,29 +816,11 @@ func (c *Config) GetPushedAuthorizeRequestURIPrefix(ctx context.Context) string 
 	return c.PAR.URIPrefix
 }
 
-// GetRequirePushedAuthorizationRequests indicates if the use of Pushed Authorization Requests is gobally required.
+// GetRequirePushedAuthorizationRequests indicates if the use of Pushed Authorization Requests is globally required.
 // In this mode, a client cannot pass authorize parameters at the 'authorize' endpoint. The 'authorize' endpoint
 // must contain the PAR request_uri.
 func (c *Config) GetRequirePushedAuthorizationRequests(ctx context.Context) (enforce bool) {
 	return c.PAR.Require
-}
-
-// GetPushedAuthorizeContextLifespan is the lifespan of the short-lived PAR context.
-func (c *Config) GetPushedAuthorizeContextLifespan(ctx context.Context) (lifespan time.Duration) {
-	if c.PAR.ContextLifespan.Seconds() <= 0 {
-		c.PAR.ContextLifespan = lifespanPARContextDefault
-	}
-
-	return c.PAR.ContextLifespan
-}
-
-// GetVerifiableCredentialsNonceLifespan is the lifespan of the verifiable credentials' nonce.
-func (c *Config) GetVerifiableCredentialsNonceLifespan(ctx context.Context) (lifespan time.Duration) {
-	if c.Lifespans.VerifiableCredentialsNonce.Seconds() == 0 {
-		c.Lifespans.VerifiableCredentialsNonce = lifespanVerifiableCredentialsNonceDefault
-	}
-
-	return c.Lifespans.VerifiableCredentialsNonce
 }
 
 func (c *Config) GetResponseModeHandlers(ctx context.Context) oauthelia2.ResponseModeHandlers {
@@ -793,7 +850,6 @@ func (c *Config) GetAllowedJWTAssertionAudiences(ctx context.Context) (audiences
 		issuer *url.URL
 		err    error
 	)
-
 	if issuer, err = octx.IssuerURL(); err != nil {
 		logging.Logger().WithError(err).Error("Error retrieving issuer")
 		return nil
@@ -806,16 +862,8 @@ func (c *Config) GetAllowedJWTAssertionAudiences(ctx context.Context) (audiences
 	}
 }
 
-func (c *Config) GetRFC8628CodeLifespan(ctx context.Context) time.Duration {
-	if c.Lifespans.RFC8628Code.Seconds() <= 0 {
-		c.Lifespans.RFC8628Code = lifespanRFC8628CodeDefault
-	}
-
-	return c.Lifespans.RFC8628Code
-}
-
 func (c *Config) GetRFC8628UserVerificationURL(ctx context.Context) string {
-	return c.getEndpointURL(ctx, EndpointPathRFC8628UserVerificationURL, c.RFC8628UserVerificationURL)
+	return c.getEndpointURL(ctx, FrontendEndpointPathConsentDeviceAuthorization, c.RFC8628UserVerificationURL)
 }
 
 func (c *Config) GetRFC8628TokenPollingInterval(ctx context.Context) (interval time.Duration) {
@@ -844,6 +892,14 @@ func (c *Config) GetDefaultRFC8693RequestedTokenType(ctx context.Context) string
 
 func (c *Config) GetEnforceJWTProfileAccessTokens(ctx context.Context) (enforce bool) {
 	return c.EnforceJWTProfileAccessTokens
+}
+
+func (c *Config) GetAuthorizeErrorFieldResponseStrategy(ctx context.Context) (strategy oauthelia2.AuthorizeErrorFieldResponseStrategy) {
+	if c.Strategy.AuthorizeErrorFieldResponse == nil {
+		c.Strategy.AuthorizeErrorFieldResponse = &RedirectAuthorizeErrorFieldResponseStrategy{Config: c}
+	}
+
+	return c.Strategy.AuthorizeErrorFieldResponse
 }
 
 func (c *Config) GetContext(ctx context.Context) (octx Context) {

@@ -19,6 +19,7 @@ const (
 
 const (
 	masterTag    = "master"
+	stringTrue   = "true"
 	stringFalse  = "false"
 	webDirectory = "web"
 )
@@ -35,15 +36,31 @@ const (
 	txtRunningSuite   = "Running suite ("
 )
 
+var (
+	buildkitePrivatePipelines = []string{"authelia-cve"}
+)
+
 const fmtLDFLAGSX = "-X 'github.com/authelia/authelia/v4/internal/utils.%s=%s'"
 
 const (
 	cmdRootShort = "A utility used in the Authelia development process."
 
 	cmdRootLong = `The authelia-scripts utility is utilized by developers and the CI/CD pipeline for configuring
-testing suites and various other aspects of the environment.
+doing various development and testing tasks.
 
-It can be used to automate or manually run unit testing, integration testing, etc.`
+It can be used to automate or manually run unit testing, integration testing, etc. It allows setting up a concept of
+suites which include various applications which replicate a functional Authelia environment using docker compose with
+the ability for Authelia to perform hot reload for the purpose of development.
+
+This can either be ran directly via go or you can leverage the development environment context by executing
+'source bootstrap.sh' from the root of the repository.
+
+Commonly used commands are as follows:
+
+authelia-scripts build - builds the authelia go binary and react frontend
+authelia-scripts docker build - builds the authelia docker image
+authelia-scripts suites setup Standalone - sets up the Standalone suite (there are many other suites)
+`
 
 	cmdRootExample = `authelia-scripts help`
 
@@ -105,7 +122,7 @@ It can be used to automate or manually run unit testing, integration testing, et
 
 	cmdSuitesListLong = `List available suites.
 
-Suites can be ran with the authelia-scripts suites test [suite] command.`
+Suites can be run with the authelia-scripts suites test [suite] command.`
 
 	cmdSuitesListExample = `authelia-scripts suites list`
 
@@ -132,6 +149,30 @@ Suites can be listed with the authelia-scripts suites list command.`
 Suites can be listed with the authelia-scripts suites list command.`
 
 	cmdSuitesTeardownExample = `authelia-scripts suites setup Standalone`
+
+	cmdSuitesExternalShort = "Commands related to external suites management"
+
+	cmdSuitesExternalLong = `Commands related to external suites management.
+
+External suites drive a project-local dev server and use the go-rod browser harness to assert the rendered output is correct.`
+
+	cmdSuitesExternalExample = `authelia-scripts suites external`
+
+	cmdSuitesExternalListShort = "List available external suites"
+
+	cmdSuitesExternalListLong = `List available external suites.
+
+External suites can be run with the authelia-scripts suites external test [suite] command.`
+
+	cmdSuitesExternalListExample = `authelia-scripts suites external list`
+
+	cmdSuitesExternalTestShort = "Run an external test suite"
+
+	cmdSuitesExternalTestLong = `Run an external test suite.
+
+External suites can be listed with the authelia-scripts suites external list command.`
+
+	cmdSuitesExternalTestExample = `authelia-scripts suites external test docs`
 
 	cmdUnitTestShort = "Run unit tests"
 

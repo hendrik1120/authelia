@@ -4,7 +4,8 @@ import { getBasePath } from "@utils/BasePath";
 
 const basePath = getBasePath();
 
-export const ConsentPath = basePath + "/api/oidc/consent";
+export const OpenIDConnectConsentPath = basePath + "/api/oidc/consent";
+export const OpenIDConnectDeviceAuthorizationPath = basePath + "/api/oidc/device-authorization";
 
 export const FirstFactorPath = basePath + "/api/firstfactor";
 export const FirstFactorPasskeyPath = basePath + "/api/firstfactor/passkey";
@@ -71,14 +72,14 @@ export interface OKResponse {
     status: "OK";
 }
 
-export type AuthenticationResponse<T> = Response<T> | AuthenticationErrorResponse;
-export type AuthenticationOKResponse = OKResponse | AuthenticationErrorResponse;
-export type OptionalDataServiceResponse<T> = OptionalDataResponse<T> | ErrorResponse;
-export type ServiceResponse<T> = Response<T> | ErrorResponse;
+export type AuthenticationResponse<T> = AuthenticationErrorResponse | Response<T>;
+export type AuthenticationOKResponse = AuthenticationErrorResponse | OKResponse;
+export type OptionalDataServiceResponse<T> = ErrorResponse | OptionalDataResponse<T>;
+export type ServiceResponse<T> = ErrorResponse | Response<T>;
 
 function toErrorResponse<T>(resp: AxiosResponse<ServiceResponse<T>>): ErrorResponse | undefined {
     if (resp.data && "status" in resp.data && resp.data["status"] === "KO") {
-        return resp.data as ErrorResponse;
+        return resp.data;
     }
 
     return undefined;
@@ -86,7 +87,7 @@ function toErrorResponse<T>(resp: AxiosResponse<ServiceResponse<T>>): ErrorRespo
 
 export function toData<T>(resp: AxiosResponse<ServiceResponse<T>>): T | undefined {
     if (resp.data && "status" in resp.data && resp.data["status"] === "OK") {
-        return resp.data.data as T;
+        return resp.data.data;
     }
 
     return undefined;
@@ -106,17 +107,17 @@ function getRetryAfter(resp: AxiosResponse): number {
     const valueRetryAfter = resp.headers["retry-after"];
     if (valueRetryAfter) {
         if (/^\d+$/.test(valueRetryAfter)) {
-            const retryAfter = parseFloat(valueRetryAfter);
+            const retryAfter = Number.parseFloat(valueRetryAfter);
 
             if (Number.isNaN(retryAfter)) {
-                throw new Error("Header Retry-After has an invalid number value");
+                throw new TypeError("Header Retry-After has an invalid number value");
             }
 
             return retryAfter;
         } else {
             const date = new Date(valueRetryAfter);
-            if (isNaN(date.getTime())) {
-                throw new Error("Header Retry-After has an invalid date value");
+            if (Number.isNaN(date.getTime())) {
+                throw new TypeError("Header Retry-After has an invalid date value");
             }
 
             return Math.max(0, (date.getTime() - Date.now()) / 1000);
@@ -129,7 +130,7 @@ function getRetryAfter(resp: AxiosResponse): number {
 export function toDataRateLimited<T>(resp: AxiosResponse<ServiceResponse<T>>): RateLimitedData<T> | undefined {
     if (resp.data && "status" in resp.data) {
         if (resp.data["status"] === "OK") {
-            return { limited: false, retryAfter: 0, data: resp.data.data as T };
+            return { data: resp.data.data, limited: false, retryAfter: 0 };
         } else if (resp.data["status"] === "KO") {
             return { limited: resp.status === 429, retryAfter: getRetryAfter(resp) };
         } else if (resp.status === 429) {
@@ -141,7 +142,7 @@ export function toDataRateLimited<T>(resp: AxiosResponse<ServiceResponse<T>>): R
 }
 
 function hasError(err: ErrorResponse | undefined) {
-    if (err && err.status === "KO") {
+    if (err?.status === "KO") {
         return { errored: true, message: err.message };
     }
 

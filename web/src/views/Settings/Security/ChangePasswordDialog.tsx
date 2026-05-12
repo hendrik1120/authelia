@@ -1,4 +1,4 @@
-import React, { MutableRefObject, useCallback, useEffect, useRef, useState } from "react";
+import { KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import {
     Button,
@@ -8,15 +8,15 @@ import {
     DialogContent,
     DialogTitle,
     FormControl,
-    Grid2,
     TextField,
 } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 
 import PasswordMeter from "@components/PasswordMeter";
+import { useNotifications } from "@contexts/NotificationsContext";
 import useCheckCapsLock from "@hooks/CapsLock";
-import { useNotifications } from "@hooks/NotificationsContext";
 import { PasswordPolicyConfiguration, PasswordPolicyMode } from "@models/PasswordPolicy";
 import { postPasswordChange } from "@services/ChangePassword";
 import { getPasswordPolicyConfiguration } from "@services/PasswordPolicyConfiguration";
@@ -29,11 +29,11 @@ interface Props {
 }
 
 const ChangePasswordDialog = (props: Props) => {
-    const { t: translate } = useTranslation("settings");
+    const { t: translate } = useTranslation(["settings", "portal"]);
 
-    const { createSuccessNotification, createErrorNotification } = useNotifications();
+    const { createErrorNotification, createSuccessNotification } = useNotifications();
 
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [oldPassword, setOldPassword] = useState("");
     const [oldPasswordError, setOldPasswordError] = useState(false);
     const [newPassword, setNewPassword] = useState("");
@@ -44,19 +44,19 @@ const ChangePasswordDialog = (props: Props) => {
     const [isCapsLockOnNewPW, setIsCapsLockOnNewPW] = useState(false);
     const [isCapsLockOnRepeatNewPW, setIsCapsLockOnRepeatNewPW] = useState(false);
 
-    const oldPasswordRef = useRef() as MutableRefObject<HTMLInputElement>;
-    const newPasswordRef = useRef() as MutableRefObject<HTMLInputElement>;
-    const repeatNewPasswordRef = useRef() as MutableRefObject<HTMLInputElement>;
+    const oldPasswordRef = useRef<HTMLInputElement | null>(null);
+    const newPasswordRef = useRef<HTMLInputElement | null>(null);
+    const repeatNewPasswordRef = useRef<HTMLInputElement | null>(null);
 
     const [pPolicy, setPPolicy] = useState<PasswordPolicyConfiguration>({
         max_length: 0,
         min_length: 8,
         min_score: 0,
+        mode: PasswordPolicyMode.Disabled,
         require_lowercase: false,
         require_number: false,
         require_special: false,
         require_uppercase: false,
-        mode: PasswordPolicyMode.Disabled,
     });
 
     const resetPasswordErrors = useCallback(() => {
@@ -87,23 +87,21 @@ const ChangePasswordDialog = (props: Props) => {
         resetStates();
     }, [props, resetStates]);
 
-    const asyncProcess = useCallback(async () => {
-        try {
-            setLoading(true);
-            const policy = await getPasswordPolicyConfiguration();
-            setPPolicy(policy);
-            setLoading(false);
-        } catch {
-            createErrorNotification(
-                translate("There was an issue completing the process the verification token might have expired"),
-            );
-            setLoading(true);
-        }
-    }, [createErrorNotification, translate]);
-
     useEffect(() => {
-        asyncProcess();
-    }, [asyncProcess]);
+        (async () => {
+            try {
+                const policy = await getPasswordPolicyConfiguration();
+                setPPolicy(policy);
+                setLoading(false);
+            } catch {
+                createErrorNotification(
+                    translate("There was an issue completing the process the verification token might have expired", {
+                        ns: "portal",
+                    }),
+                );
+            }
+        })();
+    }, [createErrorNotification, translate]);
 
     const handlePasswordChange = useCallback(async () => {
         setLoading(true);
@@ -152,16 +150,12 @@ const ChangePasswordDialog = (props: Props) => {
 
                     case 500: // Internal Server Error
                     default:
-                        createErrorNotification(
-                            translate("There was an issue changing the {{item}}", { item: translate("password") }),
-                        );
+                        createErrorNotification(translate("There was an issue changing the password"));
                         break;
                 }
             } else {
                 // Handle non-axios errors
-                createErrorNotification(
-                    translate("There was an issue changing the {{item}}", { item: translate("password") }),
-                );
+                createErrorNotification(translate("There was an issue changing the password"));
             }
             return;
         }
@@ -177,40 +171,51 @@ const ChangePasswordDialog = (props: Props) => {
         translate,
     ]);
 
-    const useHandleKeyDown = (
-        passwordState: string,
-        setError: React.Dispatch<React.SetStateAction<boolean>>,
-        nextRef?: React.MutableRefObject<HTMLInputElement>,
-    ) => {
-        return useCallback(
-            (event: React.KeyboardEvent<HTMLDivElement>) => {
-                if (event.key === "Enter") {
-                    if (!passwordState.length) {
-                        setError(true);
-                    } else if (!nextRef) {
-                        handlePasswordChange().catch(console.error);
-                    } else {
-                        nextRef?.current.focus();
-                    }
-                }
-            },
-            [nextRef, passwordState.length, setError],
-        );
-    };
+    const handleOldPWKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.key !== "Enter") return;
+            if (!oldPassword.length) {
+                setOldPasswordError(true);
+            } else if (newPasswordRef.current) {
+                newPasswordRef.current.focus();
+            }
+        },
+        [oldPassword.length],
+    );
 
-    const handleOldPWKeyDown = useHandleKeyDown(oldPassword, setOldPasswordError, newPasswordRef);
-    const handleNewPWKeyDown = useHandleKeyDown(newPassword, setNewPasswordError, repeatNewPasswordRef);
-    const handleRepeatNewPWKeyDown = useHandleKeyDown(repeatNewPassword, setRepeatNewPasswordError);
+    const handleNewPWKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.key !== "Enter") return;
+            if (!newPassword.length) {
+                setNewPasswordError(true);
+            } else if (repeatNewPasswordRef.current) {
+                repeatNewPasswordRef.current.focus();
+            }
+        },
+        [newPassword.length],
+    );
+
+    const handleRepeatNewPWKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.key !== "Enter") return;
+            if (!repeatNewPassword.length) {
+                setRepeatNewPasswordError(true);
+            } else {
+                handlePasswordChange().catch(console.error);
+            }
+        },
+        [handlePasswordChange, repeatNewPassword.length],
+    );
 
     const disabled = props.disabled || false;
 
     return (
         <Dialog open={props.open} maxWidth="xs">
-            <DialogTitle>{translate("Change {{item}}", { item: translate("Password") })}</DialogTitle>
+            <DialogTitle>{translate("Change Password")}</DialogTitle>
             <DialogContent>
                 <FormControl id={"change-password-form"} disabled={loading}>
-                    <Grid2 container spacing={1} alignItems={"center"} justifyContent={"center"} textAlign={"center"}>
-                        <Grid2 size={{ xs: 12 }} sx={{ pt: 3 }}>
+                    <Grid container spacing={1} alignItems={"center"} justifyContent={"center"} textAlign={"center"}>
+                        <Grid size={{ xs: 12 }} sx={{ pt: 3 }}>
                             <TextField
                                 inputRef={oldPasswordRef}
                                 id="old-password"
@@ -232,8 +237,8 @@ const ChangePasswordDialog = (props: Props) => {
                                 color={isCapsLockOnOldPW ? "error" : "primary"}
                                 onBlur={() => setIsCapsLockOnOldPW(false)}
                             />
-                        </Grid2>
-                        <Grid2 size={{ xs: 12 }} sx={{ mt: 3 }}>
+                        </Grid>
+                        <Grid size={{ xs: 12 }} sx={{ mt: 3 }}>
                             <TextField
                                 inputRef={newPasswordRef}
                                 id="new-password"
@@ -258,8 +263,8 @@ const ChangePasswordDialog = (props: Props) => {
                             {pPolicy.mode === PasswordPolicyMode.Disabled ? null : (
                                 <PasswordMeter value={newPassword} policy={pPolicy} />
                             )}
-                        </Grid2>
-                        <Grid2 size={{ xs: 12 }}>
+                        </Grid>
+                        <Grid size={{ xs: 12 }}>
                             <TextField
                                 inputRef={repeatNewPasswordRef}
                                 id="repeat-new-password"
@@ -281,8 +286,8 @@ const ChangePasswordDialog = (props: Props) => {
                                 color={isCapsLockOnRepeatNewPW ? "error" : "primary"}
                                 onBlur={() => setIsCapsLockOnRepeatNewPW(false)}
                             />
-                        </Grid2>
-                    </Grid2>
+                        </Grid>
+                    </Grid>
                 </FormControl>
             </DialogContent>
             <DialogActions>

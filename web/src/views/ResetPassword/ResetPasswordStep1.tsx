@@ -1,48 +1,52 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Button, CircularProgress, FormControl, Theme } from "@mui/material";
-import Grid from "@mui/material/Grid2";
+import { Button, CircularProgress, FormControl, useTheme } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
-import makeStyles from "@mui/styles/makeStyles";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import ComponentWithTooltip from "@components/ComponentWithTooltip";
 import { IndexRoute } from "@constants/Routes";
-import { useNotifications } from "@hooks/NotificationsContext";
+import { useNotifications } from "@contexts/NotificationsContext";
 import MinimalLayout from "@layouts/MinimalLayout";
 import { initiateResetPasswordProcess } from "@services/ResetPassword";
 
 const ResetPasswordStep1 = function () {
-    const styles = useStyles();
+    const theme = useTheme();
     const [username, setUsername] = useState("");
     const [error, setError] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const [rateLimited, setRateLimited] = useState(false);
-    const timeoutRateLimit = useRef<NodeJS.Timeout>();
+    const timeoutRateLimitRef = useRef<NodeJS.Timeout | null>(null);
 
-    const { createInfoNotification, createErrorNotification } = useNotifications();
+    const { createErrorNotification, createInfoNotification } = useNotifications();
     const navigate = useNavigate();
     const { t: translate } = useTranslation();
 
     useEffect(() => {
-        return clearTimeout(timeoutRateLimit.current);
+        return () => {
+            if (timeoutRateLimitRef.current !== null) {
+                clearTimeout(timeoutRateLimitRef.current);
+                timeoutRateLimitRef.current = null;
+            }
+        };
     }, []);
 
     const handleRateLimited = useCallback(
         (retryAfter: number) => {
-            if (timeoutRateLimit.current) {
-                clearTimeout(timeoutRateLimit.current);
+            if (timeoutRateLimitRef.current) {
+                clearTimeout(timeoutRateLimitRef.current);
             }
 
             setRateLimited(true);
 
             createErrorNotification(translate("You have made too many requests"));
 
-            timeoutRateLimit.current = setTimeout(() => {
+            timeoutRateLimitRef.current = setTimeout(() => {
                 setRateLimited(false);
-                timeoutRateLimit.current = undefined;
+                timeoutRateLimitRef.current = null;
             }, retryAfter * 1000);
         },
         [createErrorNotification, translate],
@@ -61,10 +65,10 @@ const ResetPasswordStep1 = function () {
 
         try {
             const response = await initiateResetPasswordProcess(username);
-            if (response && !response.limited) {
+            if (response?.limited === false) {
                 createInfoNotification(translate("An email has been sent to your address to complete the process"));
                 navigate(IndexRoute);
-            } else if (response && response.limited) {
+            } else if (response?.limited) {
                 handleRateLimited(response.retryAfter);
             } else {
                 createErrorNotification(translate("There was an issue initiating the password reset process"));
@@ -86,7 +90,7 @@ const ResetPasswordStep1 = function () {
     return (
         <MinimalLayout title={translate("Reset password")} id="reset-password-step1-stage">
             <FormControl id={"form-reset-password-username"}>
-                <Grid container className={styles.root} spacing={2}>
+                <Grid container sx={{ marginY: theme.spacing(2) }} spacing={2}>
                     <Grid size={{ xs: 12 }}>
                         <TextField
                             id="username-textfield"
@@ -106,10 +110,7 @@ const ResetPasswordStep1 = function () {
                         />
                     </Grid>
                     <Grid size={{ xs: 6 }}>
-                        <ComponentWithTooltip
-                            render={rateLimited}
-                            title={translate(translate("You have made too many requests"))}
-                        >
+                        <ComponentWithTooltip render={rateLimited} title={translate("You have made too many requests")}>
                             <Button
                                 id="reset-button"
                                 variant="contained"
@@ -142,10 +143,3 @@ const ResetPasswordStep1 = function () {
 };
 
 export default ResetPasswordStep1;
-
-const useStyles = makeStyles((theme: Theme) => ({
-    root: {
-        marginTop: theme.spacing(2),
-        marginBottom: theme.spacing(2),
-    },
-}));

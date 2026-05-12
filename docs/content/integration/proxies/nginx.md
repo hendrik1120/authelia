@@ -2,14 +2,14 @@
 title: "NGINX"
 description: "An integration guide for Authelia and the NGINX reverse proxy"
 summary: "A guide on integrating Authelia with the nginx reverse proxy."
-date: 2022-06-15T17:51:47+10:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 350
 toc: true
 aliases:
-  - /i/nginx
-  - /docs/deployment/supported-proxies/nginx.html
+  - '/i/nginx'
+  - '/docs/deployment/supported-proxies/nginx.html'
 seo:
   title: "" # custom title (optional)
   description: "" # custom description (recommended)
@@ -39,7 +39,13 @@ You need the following to run __Authelia__ with [NGINX]:
 * [NGINX] must be built with the `http_set_misc` module or the `nginx-mod-http-set-misc` package if you want to use the
   legacy method and preserve more than one query parameter when redirected to the portal due to a limitation in [NGINX]
 
-## Trusted Proxies
+## Trusted Proxies and Integration Security
+
+{{< callout context="danger" title="Security Note" icon="outline/alert-octagon" >}}
+In addition to this section which is important to read, you should read the
+[Validating Forwarded Authentication](../../reference/guides/validating-forwarded-authentication.md) reference guide
+and perform the validation steps as part of your regular security validation routine when using this integration.
+{{< /callout >}}
 
 *__Important:__ You should read the [Forwarded Headers] section and this section as part of any proxy configuration.
 Especially if you have never read it before.*
@@ -150,7 +156,7 @@ services:
     networks:
       net:
         aliases:
-          - 'https://{{</* sitevar name="subdomain-authelia" nojs="auth" */>}}.{{</* sitevar name="domain" nojs="example.com" */>}}'
+          - '{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}'
     ports:
       - '80:80/tcp'
       - '443:443/tcp'
@@ -392,7 +398,7 @@ use cases.
 #### proxy.conf
 
 The following is an example `proxy.conf`. The important directives include the `real_ip` directives which you should read
-[Trusted Proxies](#trusted-proxies) section to understand, or set the `X-Forwarded-Proto`, `X-Forwarded-Host`,
+[Trusted Proxies](#trusted-proxies-and-integration-security) section to understand, or set the `X-Forwarded-Proto`, `X-Forwarded-Host`,
 `X-Forwarded-URI`, and `X-Forwarded-For` headers.
 
 ##### Standard Variant
@@ -421,7 +427,7 @@ proxy_buffers 64 256k;
 
 ## Trusted Proxies Configuration
 ## Please read the following documentation before configuring this:
-##     https://www.authelia.com/integration/proxies/nginx/#trusted-proxies
+##     https://www.authelia.com/integration/proxies/nginx/#trusted-proxies-and-integration-security
 # set_real_ip_from 10.0.0.0/8;
 # set_real_ip_from 172.16.0.0/12;
 # set_real_ip_from 192.168.0.0/16;
@@ -526,7 +532,7 @@ proxy_set_header Remote-Name $name;
 
 ## Configure the redirection when the authz failure occurs. Lines starting with 'Modern Method' and 'Legacy Method'
 ## should be commented / uncommented as pairs. The modern method uses the session cookies configuration's authelia_url
-## value to determine the redirection URL here. It's much simpler and compatible with the mutli-cookie domain easily.
+## value to determine the redirection URL here. It's much simpler and compatible with the multi-cookie domain easily.
 
 ## Modern Method: Set the $redirection_url to the Location header of the response to the Authz endpoint.
 auth_request_set $redirection_url $upstream_http_location;
@@ -694,6 +700,11 @@ proxy_set_header Remote-Email $email;
 ## If the subreqest returns 200 pass to the backend, if the subrequest returns 401 redirect to the portal.
 error_page 401 =302 /internal/authelia/authz/detect?rd=$target_url;
 ```
+
+## Kubernetes
+
+Authelia supports some of the [NGINX] based Kubernetes Ingress. See the
+[Kubernetes Integration Guide](../kubernetes/nginx-ingress.md) for more information.
 
 ## See Also
 

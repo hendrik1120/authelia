@@ -1,8 +1,8 @@
-import { render } from '@react-email/render';
+import { render } from 'react-email';
 import * as React from "react";
 import * as fs from "node:fs";
 
-import Event, {EventProps} from './emails/Event';
+import Event from './emails/Event';
 import IdentityVerificationJWT from "./emails/IdentityVerificationJWT";
 import IdentityVerificationOTC from "./emails/IdentityVerificationOTC";
 
@@ -17,7 +17,7 @@ const optsTXT = {
 };
 
 async function doRender() {
-	const propsEvent: EventProps = {
+	const propsEvent = {
 		title: "{{ .Title }}",
 		displayName: "{{ .DisplayName }}",
         bodyPrefix: "{{ .BodyPrefix }}",
@@ -51,8 +51,13 @@ async function doRender() {
 		revocationLinkText: "{{ .RevocationLinkText }}",
 	};
 
+	const propsJWTTxt = {
+		...propsJWT,
+		isPlainText: true,
+	};
+
 	fs.writeFileSync('../embed/notification/IdentityVerificationJWT.html', await render(<IdentityVerificationJWT {...propsJWT} />, optsHTML));
-	fs.writeFileSync('../embed/notification/IdentityVerificationJWT.txt', await render(<IdentityVerificationJWT {...propsJWT} />, optsTXT));
+	fs.writeFileSync('../embed/notification/IdentityVerificationJWT.txt', await render(<IdentityVerificationJWT {...propsJWTTxt} />, optsTXT));
 
 	const propsJWTNoPreview = {
 		...propsJWT,
@@ -71,8 +76,13 @@ async function doRender() {
 		revocationLinkText: "{{ .RevocationLinkText }}",
 	};
 
+	const propsOTCTxt = {
+		...propsOTC,
+		isPlainText: true,
+	};
+
 	fs.writeFileSync('../embed/notification/IdentityVerificationOTC.html', await render(<IdentityVerificationOTC {...propsOTC} />, optsHTML));
-	fs.writeFileSync('../embed/notification/IdentityVerificationOTC.txt', await render(<IdentityVerificationOTC {...propsOTC} />, optsTXT));
+	fs.writeFileSync('../embed/notification/IdentityVerificationOTC.txt', await render(<IdentityVerificationOTC {...propsOTCTxt} />, optsTXT));
 
 	const propsOTCNoPreview = {
 		...propsOTC,
@@ -83,5 +93,3 @@ async function doRender() {
 }
 
 doRender().then();
-
-

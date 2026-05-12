@@ -93,7 +93,6 @@ func ValidateServerAddress(config *schema.Configuration, validator *schema.Struc
 		config.Server.Address = schema.DefaultServerConfiguration.Address
 	} else {
 		var err error
-
 		if err = config.Server.Address.ValidateHTTP(); err != nil {
 			validator.Push(fmt.Errorf(errFmtServerAddress, config.Server.Address.String(), err))
 		}
@@ -104,10 +103,17 @@ func ValidateServerAddress(config *schema.Configuration, validator *schema.Struc
 		config.Server.Address.SetPath("/")
 	case subpath != "/":
 		if p := strings.TrimPrefix(subpath, "/"); strings.Contains(p, "/") {
-			validator.Push(fmt.Errorf(errFmtServerPathNotEndForwardSlash, subpath))
+			parts := strings.SplitN(subpath, "/", 3)
+			example := "/" + parts[1]
+
+			validator.Push(fmt.Errorf(errFmtServerPathNotEndForwardSlash, example, subpath))
 		} else if !utils.IsStringAlphaNumeric(p) {
 			validator.Push(fmt.Errorf(errFmtServerPathAlphaNumeric, subpath))
 		}
+	}
+
+	if config.Server.Address.IsUnixDomainSocket() || config.Server.Address.IsFileDescriptor() {
+		config.Server.DisableHealthcheck = true
 	}
 }
 
@@ -138,9 +144,7 @@ func ValidateServerEndpoints(config *schema.Configuration, validator *schema.Str
 	sort.Strings(authzs)
 
 	for _, name := range authzs {
-		endpoint := config.Server.Endpoints.Authz[name]
-
-		validateServerEndpointsAuthzEndpoint(config, name, endpoint, validator)
+		validateServerEndpointsAuthzEndpoint(config, name, validator)
 
 		for _, oName := range authzs {
 			oEndpoint := config.Server.Endpoints.Authz[oName]
@@ -159,7 +163,7 @@ func ValidateServerEndpoints(config *schema.Configuration, validator *schema.Str
 			}
 		}
 
-		validateServerEndpointsAuthzStrategies(name, endpoint.Implementation, endpoint.AuthnStrategies, validator)
+		validateServerEndpointsAuthzStrategies(config, name, validator)
 	}
 }
 
@@ -185,7 +189,6 @@ func validateServerAssets(config *schema.Configuration, validator *schema.Struct
 		entries []fs.DirEntry
 		err     error
 	)
-
 	if entries, err = os.ReadDir(filepath.Join(config.Server.AssetPath, "locales")); err != nil {
 		if !os.IsNotExist(err) {
 			validator.Push(fmt.Errorf("server: asset_path: error occurred reading the '%s' directory: %w", filepath.Join(config.Server.AssetPath, "locales"), err))
@@ -276,8 +279,12 @@ func validateServerAssetsIterate(keyRoot, path string, translations map[string]a
 }
 
 func validateServerEndpointsRateLimits(config *schema.Configuration, validator *schema.StructValidator) {
+	validateServerEndpointsRateLimitDefault("openid_connect_pushed_authorization_request", &config.Server.Endpoints.RateLimits.OpenIDConnectPushedAuthorizationRequest, schema.DefaultServerConfiguration.Endpoints.RateLimits.OpenIDConnectPushedAuthorizationRequest, validator)
+	validateServerEndpointsRateLimitDefault("openid_connect_token", &config.Server.Endpoints.RateLimits.OpenIDConnectToken, schema.DefaultServerConfiguration.Endpoints.RateLimits.OpenIDConnectToken, validator)
+
 	validateServerEndpointsRateLimitDefault("reset_password_start", &config.Server.Endpoints.RateLimits.ResetPasswordStart, schema.DefaultServerConfiguration.Endpoints.RateLimits.ResetPasswordStart, validator)
 	validateServerEndpointsRateLimitDefault("reset_password_finish", &config.Server.Endpoints.RateLimits.ResetPasswordFinish, schema.DefaultServerConfiguration.Endpoints.RateLimits.ResetPasswordFinish, validator)
+
 	validateServerEndpointsRateLimitDefault("second_factor_totp", &config.Server.Endpoints.RateLimits.SecondFactorTOTP, schema.DefaultServerConfiguration.Endpoints.RateLimits.SecondFactorTOTP, validator)
 	validateServerEndpointsRateLimitDefault("second_factor_duo", &config.Server.Endpoints.RateLimits.SecondFactorDuo, schema.DefaultServerConfiguration.Endpoints.RateLimits.SecondFactorDuo, validator)
 
@@ -328,7 +335,9 @@ func validateServerEndpointsRateLimitBuckets(name string, config *schema.ServerE
 	}
 }
 
-func validateServerEndpointsAuthzEndpoint(config *schema.Configuration, name string, endpoint schema.ServerEndpointsAuthz, validator *schema.StructValidator) {
+func validateServerEndpointsAuthzEndpoint(config *schema.Configuration, name string, validator *schema.StructValidator) {
+	endpoint := config.Server.Endpoints.Authz[name]
+
 	if name == legacy {
 		switch endpoint.Implementation {
 		case schema.AuthzImplementationLegacy:
@@ -354,10 +363,12 @@ func validateServerEndpointsAuthzEndpoint(config *schema.Configuration, name str
 }
 
 //nolint:gocyclo
-func validateServerEndpointsAuthzStrategies(name, implementation string, strategies []schema.ServerEndpointsAuthzAuthnStrategy, validator *schema.StructValidator) {
+func validateServerEndpointsAuthzStrategies(config *schema.Configuration, name string, validator *schema.StructValidator) {
+	endpoint := config.Server.Endpoints.Authz[name]
+
 	var defaults []schema.ServerEndpointsAuthzAuthnStrategy
 
-	switch implementation {
+	switch endpoint.Implementation {
 	case schema.AuthzImplementationLegacy:
 		defaults = schema.DefaultServerConfiguration.Endpoints.Authz[schema.AuthzEndpointNameLegacy].AuthnStrategies
 	case schema.AuthzImplementationAuthRequest:
@@ -368,22 +379,26 @@ func validateServerEndpointsAuthzStrategies(name, implementation string, strateg
 		defaults = schema.DefaultServerConfiguration.Endpoints.Authz[schema.AuthzEndpointNameForwardAuth].AuthnStrategies
 	}
 
-	if len(strategies) == 0 {
-		copy(strategies, defaults)
+	if len(config.Server.Endpoints.Authz[name].AuthnStrategies) == 0 {
+		endpoint.AuthnStrategies = make([]schema.ServerEndpointsAuthzAuthnStrategy, len(defaults))
+
+		copy(endpoint.AuthnStrategies, defaults)
+
+		config.Server.Endpoints.Authz[name] = endpoint
 
 		return
 	}
 
-	names := make([]string, 0, len(strategies))
+	names := make([]string, 0, len(endpoint.AuthnStrategies))
 
-	for i, strategy := range strategies {
+	for i, strategy := range endpoint.AuthnStrategies {
 		if strategy.Name != "" && utils.IsStringInSlice(strategy.Name, names) {
 			validator.Push(fmt.Errorf(errFmtServerEndpointsAuthzStrategyDuplicate, name, strategy.Name))
 		}
 
 		names = append(names, strategy.Name)
 
-		if strategy.SchemeBasicCacheLifespan > 0 && !utils.IsStringInSlice(schema.SchemeBasic, strategy.Schemes) {
+		if strategy.SchemeBasicCacheLifespan > 0 && !utils.IsStringInSliceFold(schema.SchemeBasic, strategy.Schemes) {
 			validator.Push(fmt.Errorf(errFmtServerEndpointsAuthzStrategySchemeOnlyOption, name, i+1, "scheme_basic_cache_lifespan", schema.SchemeBasic, utils.StringJoinAnd(strategy.Schemes)))
 		}
 
@@ -395,7 +410,7 @@ func validateServerEndpointsAuthzStrategies(name, implementation string, strateg
 		default:
 			if utils.IsStringInSlice(strategy.Name, validAuthzAuthnHeaderStrategies) {
 				if len(strategy.Schemes) == 0 {
-					strategies[i].Schemes = defaults[0].Schemes
+					endpoint.AuthnStrategies[i].Schemes = defaults[0].Schemes
 				} else {
 					for _, scheme := range strategy.Schemes {
 						if !utils.IsStringInSliceFold(scheme, validAuthzAuthnStrategySchemes) {
@@ -408,4 +423,6 @@ func validateServerEndpointsAuthzStrategies(name, implementation string, strateg
 			}
 		}
 	}
+
+	config.Server.Endpoints.Authz[name] = endpoint
 }

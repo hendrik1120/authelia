@@ -2,7 +2,7 @@
 title: "Passwords"
 description: "A reference guide on passwords and hashing etc"
 summary: "This section contains reference documentation for Authelia."
-date: 2022-06-15T17:51:47+10:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 220
@@ -86,12 +86,12 @@ including the extra attributes which may not exist unless they are configured.
 
 The file contains hashed passwords instead of plain text passwords for security reasons.
 
-You can use Authelia binary or docker image to generate the hash of any password. The [crypt hash generate] command has
+You can use Authelia binary or docker image to generate the hash of any password. The [crypto hash generate] command has
 many supported algorithms. To view them run the `authelia crypto hash generate --help` command. To see the tunable
 options for an algorithm subcommand include that command before `--help`. For example for the [Argon2] algorithm use the
 `authelia crypto hash generate argon2 --help` command to see the available options.
 
-Passwords passed to [crypt hash generate] should be single quoted if using the `--password` parameter instead of the
+Passwords passed to [crypto hash generate] should be single quoted if using the `--password` parameter instead of the
 console prompt, especially if it has  special characters to prevent parameter substitution.
 
 To generate an [Argon2] hash with the docker image interactively just run:
@@ -215,7 +215,8 @@ The algorithm that a hash is utilizing is identifiable by its prefix:
 |   [Argon2]   | `argon2id` |   `$argon2id$`    |
 |   [Argon2]   | `argon2i`  |    `$argon2i$`    |
 |   [Argon2]   | `argon2d`  |    `$argon2d$`    |
-|   [Scrypt]   |    N/A     |    `$scrypt$`     |
+|   [Scrypt]   |  `scrypt`  |    `$scrypt$`     |
+|   [Scrypt]   | `yescrypt` |       `$y$`       |
 |   [PBKDF2]   |   `sha1`   |    `$pbkdf2$`     |
 |   [PBKDF2]   |  `sha224`  | `$pbkdf2-sha224$` |
 |   [PBKDF2]   |  `sha256`  | `$pbkdf2-sha256$` |
@@ -284,5 +285,5 @@ This table suggests the parameters for the [SHA2 Crypt] algorithm:
 
 [RFC9106 Parameter Choice]: https://datatracker.ietf.org/doc/html/rfc9106#section-4
 [YAML]: https://yaml.org/
-[crypt hash generate]: ../cli/authelia/authelia_crypto_hash_generate.md
+[crypto hash generate]: ../cli/authelia/authelia_crypto_hash_generate.md
 [Password Hashing Competition]: https://en.wikipedia.org/wiki/Password_Hashing_Competition

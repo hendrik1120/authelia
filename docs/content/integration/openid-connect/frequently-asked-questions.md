@@ -2,10 +2,10 @@
 title: "Frequently Asked Questions"
 description: "Frequently Asked Questions regarding integrating the Authelia OpenID Connect 1.0 Provider with an OpenID Connect 1.0 Relying Party"
 summary: "Frequently Asked Questions regarding integrating the Authelia OpenID Connect 1.0 Provider with an OpenID Connect 1.0 Relying Party."
-date: 2022-10-20T15:27:09+11:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
-weight: 615
+weight: 690
 toc: true
 seo:
   title: "" # custom title (optional)
@@ -50,12 +50,12 @@ separately.
 
 {{< envTabs "Generate a Random Client ID" >}}
 {{< envTab "Docker" >}}
-```bash
+```shell
 docker run --rm authelia/authelia:latest authelia crypto rand --length 72 --charset rfc3986
 ```
 {{< /envTab >}}
 {{< envTab "Bare-Metal" >}}
-```bash
+```shell
 authelia crypto rand --length 72 --charset rfc3986
 ```
 {{< /envTab >}}
@@ -76,12 +76,12 @@ separately.
 
 {{< envTabs "Generate a Random Client Secret" >}}
 {{< envTab "Docker" >}}
-```bash
+```shell
 docker run --rm authelia/authelia:latest authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986
 ```
 {{< /envTab >}}
 {{< envTab "Bare-Metal" >}}
-```bash
+```shell
 authelia crypto hash generate pbkdf2 --variant sha512 --random --random.length 72 --random.charset rfc3986
 ```
 {{< /envTab >}}
@@ -229,19 +229,20 @@ client configuration option.
 
 ### How should I link user accounts to Authelia OpenID Connect 1.0 responses in the application I'm designing?
 
-There are several in-use methodologies for linking user accounts ot OpenID Connect 1.0 Providers. The specification has
+There are several in-use methodologies for linking user accounts to [OpenID Connect 1.0] Providers. The specification has
 a fairly strong opinion about how this is done for various reasons and the supported method by Authelia is the same as
 what the specification supports.
 
-Specifically we support using the combination of the `iss` and `sub` claim as an anchor to local user accounts. This
-combination is a combination that must be unique for any given user identity. Claims such as `email` and
-`preferred_username` have no formal guarantees of stability by the OpenID Connect 1.0 specification.
+Specifically we support using the pairwise comparison of the `iss` and `sub` claim as an anchor to local user accounts.
+This combination is a combination that must be unique for any given user identity. Claims such as `email` and
+`preferred_username` have no formal guarantees of stability or uniqueness by the [OpenID Connect 1.0] specification or
+Authelia.
 
 Several in-use applications including ones that Authelia users frequently use utilize claims such as `email` and
 `preferred_username`. However these implementations are in contradiction with the specification. These attributes
-realistically should only be used as hints when a user who has not linked their account tries to login with OpenID
-Connect 1.0 and has not logged in yet. For example an application may prefill the username or email field of a login or
-registration form using these claims.
+realistically should only be used as hints when a user who has not linked their account tries to login or register
+their account with [OpenID Connect 1.0]. For example in either scenario an application may prefill the username or email
+field of a login or registration form using these claims.
 
 Utilization of these claims could potentially become problematic if we ever implement a feature to change usernames or
 email addresses. Therefore we only guarantee the stability of those specific claims and at such a time as we allow
@@ -251,6 +252,55 @@ considered fragile.
 If interested in the specification you can read the
 [Claim Stability and Uniqueness](https://openid.net/specs/openid-connect-core-1_0.html#ClaimStability) section of the
 specification.
+
+### Why does Authelia ask for Consent when I've asked for my consent to be remembered or used the implicit consent policy?
+
+There are varying conditions which are controlled by the client when making an Authorization Request where explicit
+consent may be required. These areas are mostly governed by the specification, or in situations where the issued token
+or tokens have certain properties directly related to Authelia itself such as being used for a Forward Authz Bearer
+token.
+
+This effectively means that both the consent mode and remembered consent i.e. pre-configured consent are essentially
+preferences should the conditions not require explicit consent and should not be seen as concrete.
+
+In addition it's important to note that the consent mode is merely a suggested default behavior, especially the
+`implicit` consent mode which is not specifically supported by the specification and in many cases will either revert to
+`explicit`, silently not perform certain expected actions, or should be expected to return an error the client. This
+mode is intended for development and testing, and is heavily discouraged in production.
+
+The consent policy implementation is likely a target for a breaking refactoring before we stabilize the
+OpenID Connect 1.0 Provider implementation due to additional understanding of how the specifications require us to
+handle Consent Flows.
+
+The following specific and intentional limitations exist:
+
+1. The Authorization Code Flow will require explicit consent if a Refresh Token will be granted to the relying party
+   (i.e. if the client is authorized to request and requests the `offline_access` or `offline` scopes).
+   1. The specific requirement is that a Refresh Token must not be issued if consent is not requested however the
+      implication is that explicit consent is required for Refresh Tokens. In the future we will adjust this so
+      the Authorization Code Flow will not mint and grant a Refresh Token unless the relying party explicitly requests
+      consent, with an option to automatically require explicit consent instead of silently ignoring the request for
+      a Refresh Token.
+2. If the client requests the user is prompted to provide consent, the mode will automatically be `explicit` regardless
+   of client registration configuration.
+3. If the client requests the user is prompted to login again, then the mode will either automatically be
+   `explicit` or the flow may also result in a failure that returns an error to the client, regardless of the client
+   registration configuration.
+4. If the authorization request results in security sensitive tokens such as:
+   1. Tokens that can be used as Bearer Tokens which impersonate users for the Authelia Authz endpoints.
+   2. Tokens that can be used as Bearer Tokens for the Authelia API, especially for endpoints that allow alteration of
+      any security related characteristic of users or Authelia settings.
+   3. Any future characteristic deemed appropriate in the future (which will be explicitly documented in this FAQ) such
+      as but not limited to:
+      1. Minting of Tokens with long lifespans.
+      2. Minting of Tokens which have special use cases such as Dynamic Client Registration, Session Management, etc.
+      3. In any situation where it's required or recommended by the existing or future specifications including formal
+         specifications, security profiles like the Financial-grade API, and best current practices, etc.
+      4. Minting of Tokens in any context which may be seen as especially security sensitive by the maintainers either
+         through community consultation, identified during security audits or reviews, or identified during normal
+         development cycles.
+5. If the current flow is otherwise not compatible with implicit consent for any reason; for example:
+   1. The Device Authorization Flow which requires interactive consent due to the code functionality.
 
 ## Solutions
 
@@ -313,3 +363,4 @@ docker run -d --name application --network proxy <other application arguments>
 
 [Endpoint]: ./introduction.md#discoverable-endpoints
 [RFC3986 Unreserved Characters]: https://datatracker.ietf.org/doc/html/rfc3986#section-2.3
+[OpenID Connect 1.0]: https://openid.net/specs/openid-connect-core-1_0.html

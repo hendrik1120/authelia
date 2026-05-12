@@ -13,6 +13,8 @@ import (
 )
 
 func AssertLogEntryMessageAndError(t *testing.T, entry *logrus.Entry, message, err any) {
+	t.Helper()
+
 	require.NotNil(t, entry)
 
 	switch value := message.(type) {
@@ -61,6 +63,8 @@ func AssertLogEntryMessageAndError(t *testing.T, entry *logrus.Entry, message, e
 }
 
 func MustGetLogLastSeq(t *testing.T, hook *test.Hook, seq int) *logrus.Entry {
+	t.Helper()
+
 	require.Greater(t, len(hook.Entries), seq)
 
 	return &hook.Entries[len(hook.Entries)-1-seq]
@@ -68,7 +72,7 @@ func MustGetLogLastSeq(t *testing.T, hook *test.Hook, seq int) *logrus.Entry {
 
 //nolint:unparam
 func getStepTOTP(ctx *middlewares.AutheliaCtx, period int) uint64 {
-	step := ctx.Clock.Now().Unix()
+	step := ctx.GetClock().Now().Unix()
 
 	if period < 0 {
 		period = ctx.Configuration.TOTP.DefaultPeriod

@@ -2,7 +2,7 @@
 title: "Proxies"
 description: "An integration guide for Authelia and several supported reverse proxies"
 summary: "An introduction into integrating Authelia with a reverse proxy."
-date: 2022-06-15T17:51:47+10:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 310
@@ -25,6 +25,10 @@ examples of already documented proxies, as well as provide us examples of undocu
 It's __*strongly recommended*__ that users setting up *Authelia* for the first time take a look at our
 [Get started](../prologue/get-started.md) guide. This takes you through various steps which are essential to
 bootstrapping *Authelia*.
+
+It's also important that users check the
+[Validating Forwarded Authentication](../../reference/guides/validating-forwarded-authentication.md) reference guide
+when using these integrations.
 
 ## Support
 

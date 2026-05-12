@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/valyala/fasthttp"
@@ -37,7 +38,7 @@ func (s *HandlerSignTOTPSuite) SetupTest() {
 	s.Assert().NoError(s.mock.Ctx.SaveSession(userSession))
 
 	s.mock.Clock.Set(time.Unix(1701295903, 0))
-	s.mock.Ctx.Clock = &s.mock.Clock
+	s.mock.Ctx.Providers.Clock = &s.mock.Clock
 	s.mock.Ctx.Configuration.TOTP = schema.DefaultTOTPConfiguration
 }
 
@@ -560,6 +561,9 @@ func (s *HandlerSignTOTPSuite) TestShouldHandleGETErrorLoadConfiguration() {
 }
 
 func (s *HandlerSignTOTPSuite) TestShouldHandleGETErrorLoadConfigurationNotFound() {
+	level := s.mock.Ctx.Logger.Level
+	s.mock.SetLogLevel(logrus.DebugLevel)
+
 	gomock.InOrder(
 		s.mock.StorageMock.
 			EXPECT().
@@ -570,7 +574,8 @@ func (s *HandlerSignTOTPSuite) TestShouldHandleGETErrorLoadConfigurationNotFound
 	TimeBasedOneTimePasswordGET(s.mock.Ctx)
 	s.mock.Assert404KO(s.T(), "Could not find TOTP Configuration for user.")
 
-	s.AssertLastLogMessage("Error occurred retrieving TOTP configuration for user 'john': error occurred retrieving the configuration from the storage backend", "no TOTP configuration for user")
+	s.AssertLastLogMessage("Error occurred retrieving TOTP configuration for user 'john'", "no TOTP configuration for user")
+	s.mock.SetLogLevel(level)
 }
 
 func (s *HandlerSignTOTPSuite) TestShouldReturnErrorOnInvalidValue() {
@@ -835,18 +840,20 @@ func TestSignTOTPHandleGetSessionError(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			mock := mocks.NewMockAutheliaCtx(t)
+			defer mock.Close()
 
 			mock.Clock.Set(time.Unix(1701295903, 0))
-			mock.Ctx.Clock = &mock.Clock
+			mock.Ctx.Providers.Clock = &mock.Clock
 			mock.Ctx.Configuration.TOTP = schema.DefaultTOTPConfiguration
-			mock.Ctx.Request.Header.Set("X-Original-URL", "https://auth.notexample.com")
+
+			mock.Ctx.Request.Header.Set(fasthttp.HeaderXForwardedHost, "auth.notexample.com")
 
 			tc.handler(mock.Ctx)
 
 			assert.Equal(t, fasthttp.StatusForbidden, mock.Ctx.Response.StatusCode())
 			assert.Equal(t, fmt.Sprintf(`{"status":"KO","message":"%s"}`, tc.message), string(mock.Ctx.Response.Body()))
 
-			AssertLogEntryMessageAndError(t, mock.Hook.LastEntry(), tc.expected, "unable to retrieve session cookie domain provider: no configured session cookie domain matches the url 'https://auth.notexample.com'")
+			AssertLogEntryMessageAndError(t, mock.Hook.LastEntry(), tc.expected, "unable to retrieve session cookie domain provider: no configured session cookie domain matches the url 'https://auth.notexample.com/'")
 		})
 	}
 }

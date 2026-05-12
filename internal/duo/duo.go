@@ -2,9 +2,9 @@ package duo
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 
-	duoapi "github.com/duosecurity/duo_api_golang"
 	"github.com/valyala/fasthttp"
 
 	"github.com/authelia/authelia/v4/internal/middlewares"
@@ -12,67 +12,78 @@ import (
 )
 
 // NewDuoAPI create duo API instance.
-func NewDuoAPI(duoAPI *duoapi.DuoApi) *APIImpl {
-	return &APIImpl{
-		DuoApi: duoAPI,
+func NewDuoAPI(duoAPI BaseProvider) *Production {
+	return &Production{
+		BaseProvider: duoAPI,
 	}
 }
 
 // Call performs a request to the DuoAPI.
-func (d *APIImpl) Call(ctx *middlewares.AutheliaCtx, userSession *session.UserSession, values url.Values, method string, path string) (*Response, error) {
-	var response Response
+func (d *Production) Call(ctx middlewares.Context, userSession *session.UserSession, values url.Values, method string, path string) (r *Response, err error) {
+	var (
+		response Response
+		body     []byte
+	)
 
-	_, responseBytes, err := d.DuoApi.SignedCall(method, path, values)
-	if err != nil {
-		return nil, err
+	if _, body, err = d.SignedCall(method, path, values); err != nil {
+		return nil, fmt.Errorf("error occurred making signed call: %w", err)
 	}
 
-	ctx.Logger.Tracef("Duo endpoint: %s response raw data for %s from IP %s: %s", path, userSession.Username, ctx.RemoteIP().String(), string(responseBytes))
+	ctx.GetLogger().Tracef("Duo endpoint: %s response raw data for %s from IP %s: %s", path, userSession.Username, ctx.RemoteIP().String(), string(body))
 
-	err = json.Unmarshal(responseBytes, &response)
-	if err != nil {
-		return nil, err
+	if err = json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("error occurred parsing response: %w", err)
 	}
 
-	if response.Stat == "FAIL" {
-		ctx.Logger.Warnf(
-			"Duo Push Auth failed to process the auth request for %s from %s: %s (%s), error code %d.",
-			userSession.Username, ctx.RemoteIP().String(),
-			response.Message, response.MessageDetail, response.Code)
-	}
+	switch response.Stat {
+	case "OK":
+		ctx.GetLogger().
+			WithFields(map[string]any{"status": response.Stat, "message": response.Message, "username": userSession.Username}).
+			Trace("Duo Push Auth success response.")
 
-	return &response, nil
+		return &response, nil
+	case "FAIL":
+		ctx.GetLogger().
+			WithFields(map[string]any{"status": response.Stat, "status_code": response.Code, "message": response.Message, "message_detail": response.MessageDetail, "username": userSession.Username}).
+			Warn("Duo Push Auth call returned a failure status.")
+
+		return &response, fmt.Errorf("failure status was returned")
+	default:
+		ctx.GetLogger().
+			WithFields(map[string]any{"status": response.Stat, "status_code": response.Code, "message": response.Message, "message_detail": response.MessageDetail, "username": userSession.Username}).
+			Warn("Duo Push API call returned an unknown status.")
+
+		return &response, fmt.Errorf("unknown status was returned")
+	}
 }
 
 // PreAuthCall performs a preauth request to the DuoAPI.
-func (d *APIImpl) PreAuthCall(ctx *middlewares.AutheliaCtx, userSession *session.UserSession, values url.Values) (*PreAuthResponse, error) {
+func (d *Production) PreAuthCall(ctx middlewares.Context, userSession *session.UserSession, values url.Values) (r *PreAuthResponse, err error) {
 	var preAuthResponse PreAuthResponse
 
 	response, err := d.Call(ctx, userSession, values, fasthttp.MethodPost, "/auth/v2/preauth")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error occurred making the preauth call to the duo api: %w", err)
 	}
 
-	err = json.Unmarshal(response.Response, &preAuthResponse)
-	if err != nil {
-		return nil, err
+	if err = json.Unmarshal(response.Response, &preAuthResponse); err != nil {
+		return nil, fmt.Errorf("error occurred parsing the duo api preauth json response: %w", err)
 	}
 
 	return &preAuthResponse, nil
 }
 
 // AuthCall performs an auth request to the DuoAPI.
-func (d *APIImpl) AuthCall(ctx *middlewares.AutheliaCtx, userSession *session.UserSession, values url.Values) (*AuthResponse, error) {
+func (d *Production) AuthCall(ctx middlewares.Context, userSession *session.UserSession, values url.Values) (r *AuthResponse, err error) {
 	var authResponse AuthResponse
 
 	response, err := d.Call(ctx, userSession, values, fasthttp.MethodPost, "/auth/v2/auth")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error occurred making the auth call to the duo api: %w", err)
 	}
 
-	err = json.Unmarshal(response.Response, &authResponse)
-	if err != nil {
-		return nil, err
+	if err = json.Unmarshal(response.Response, &authResponse); err != nil {
+		return nil, fmt.Errorf("error occurred parsing the duo api auth json response: %w", err)
 	}
 
 	return &authResponse, nil

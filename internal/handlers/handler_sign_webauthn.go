@@ -24,7 +24,6 @@ func WebAuthnAssertionGET(ctx *middlewares.AutheliaCtx) {
 		userSession session.UserSession
 		err         error
 	)
-
 	if userSession, err = ctx.GetSession(); err != nil {
 		ctx.SetStatusCode(fasthttp.StatusForbidden)
 		ctx.SetJSONError(messageMFAValidationFailed)
@@ -141,7 +140,6 @@ func WebAuthnAssertionPOST(ctx *middlewares.AutheliaCtx) {
 
 		response *protocol.ParsedCredentialAssertionData
 	)
-
 	if userSession, err = ctx.GetSession(); err != nil {
 		ctx.Logger.WithError(err).Errorf("Error occurred validating a WebAuthn authentication challenge: %s", errStrUserSessionData)
 
@@ -226,7 +224,7 @@ func WebAuthnAssertionPOST(ctx *middlewares.AutheliaCtx) {
 
 	for _, credential := range user.Credentials {
 		if bytes.Equal(credential.KID.Bytes(), c.ID) {
-			credential.UpdateSignInInfo(w.Config, ctx.Clock.Now().UTC(), c.Authenticator)
+			credential.UpdateSignInInfo(w.Config, ctx.GetClock().Now().UTC(), c)
 
 			found = true
 
@@ -272,13 +270,13 @@ func WebAuthnAssertionPOST(ctx *middlewares.AutheliaCtx) {
 
 	doMarkAuthenticationAttempt(ctx, true, regulation.NewBan(regulation.BanTypeNone, userSession.Username, nil), regulation.AuthTypeWebAuthn, nil)
 
-	userSession.SetTwoFactorWebAuthn(ctx.Clock.Now(),
-		response.ParsedPublicKeyCredential.AuthenticatorAttachment == protocol.CrossPlatform,
+	userSession.SetTwoFactorWebAuthn(ctx.GetClock().Now().UTC(),
+		response.AuthenticatorAttachment == protocol.CrossPlatform,
 		response.Response.AuthenticatorData.Flags.HasUserPresent(),
 		response.Response.AuthenticatorData.Flags.HasUserVerified())
 
-	if bodyJSON.Workflow == workflowOpenIDConnect {
-		handleOIDCWorkflowResponse(ctx, &userSession, bodyJSON.WorkflowID)
+	if len(bodyJSON.Flow) > 0 {
+		handleFlowResponse(ctx, &userSession, bodyJSON.FlowID, bodyJSON.Flow, bodyJSON.SubFlow, bodyJSON.UserCode)
 	} else {
 		Handle2FAResponse(ctx, bodyJSON.TargetURL)
 	}

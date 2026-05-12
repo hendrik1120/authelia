@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -33,8 +32,7 @@ func (s *CustomHeadersScenario) SetupSuite() {
 }
 
 func (s *CustomHeadersScenario) TearDownSuite() {
-	err := s.RodSession.Stop()
-
+	err := s.Stop()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -52,6 +50,7 @@ func (s *CustomHeadersScenario) TearDownTest() {
 
 func (s *CustomHeadersScenario) TestShouldNotForwardCustomHeaderForUnauthenticatedUser() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
 	defer func() {
 		cancel()
 		s.collectScreenshot(ctx.Err(), s.Page)
@@ -71,10 +70,10 @@ func (s *CustomHeadersScenario) TestShouldNotForwardCustomHeaderForUnauthenticat
 }
 
 type Headers struct {
-	ForwardedEmail  string `json:"Remote-Email"`
-	ForwardedGroups string `json:"Remote-Groups"`
-	ForwardedName   string `json:"Remote-Name"`
-	ForwardedUser   string `json:"Remote-User"`
+	ForwardedEmail  []string `json:"Remote-Email"`
+	ForwardedGroups []string `json:"Remote-Groups"`
+	ForwardedName   []string `json:"Remote-Name"`
+	ForwardedUser   []string `json:"Remote-User"`
 }
 
 type HeadersPayload struct {
@@ -83,12 +82,13 @@ type HeadersPayload struct {
 
 func (s *CustomHeadersScenario) TestShouldForwardCustomHeaderForAuthenticatedUser() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
 	defer func() {
 		cancel()
 		s.collectScreenshot(ctx.Err(), s.Page)
 	}()
 
-	expectedGroups := mapset.NewSet("dev", "admins")
+	expectedGroups := []string{"dev", "admins"}
 
 	targetURL := fmt.Sprintf("%s/headers", PublicBaseURL)
 	s.doLoginOneFactor(s.T(), s.Context(ctx), "john", "password", false, BaseDomain, targetURL)
@@ -103,25 +103,22 @@ func (s *CustomHeadersScenario) TestShouldForwardCustomHeaderForAuthenticatedUse
 	s.Assert().NotNil(content)
 
 	payload := HeadersPayload{}
-	if err := json.Unmarshal([]byte(content), &payload); err != nil {
-		log.Panic(err)
+	s.Require().NoError(json.Unmarshal([]byte(content), &payload))
+
+	s.Require().NotEmpty(payload.Headers.ForwardedUser)
+	s.Require().NotEmpty(payload.Headers.ForwardedGroups)
+	s.Require().NotEmpty(payload.Headers.ForwardedName)
+	s.Require().NotEmpty(payload.Headers.ForwardedEmail)
+
+	groups := strings.Split(payload.Headers.ForwardedGroups[0], ",")
+
+	s.Assert().Equal("john", payload.Headers.ForwardedUser[0])
+	s.Assert().Equal("John Doe", payload.Headers.ForwardedName[0])
+	s.Assert().Equal("john.doe@authelia.com", payload.Headers.ForwardedEmail[0])
+
+	for _, group := range expectedGroups {
+		s.Assert().Contains(groups, group)
 	}
-
-	groups := strings.Split(payload.Headers.ForwardedGroups, ",")
-	actualGroups := mapset.NewSet[string]()
-
-	for _, group := range groups {
-		actualGroups.Add(group)
-	}
-
-	if strings.Contains(payload.Headers.ForwardedUser, "john") && expectedGroups.Equal(actualGroups) &&
-		strings.Contains(payload.Headers.ForwardedName, "John Doe") && strings.Contains(payload.Headers.ForwardedEmail, "john.doe@authelia.com") {
-		err = nil
-	} else {
-		err = fmt.Errorf("headers do not include user information")
-	}
-
-	s.Require().NoError(err)
 }
 
 func TestCustomHeadersScenario(t *testing.T) {

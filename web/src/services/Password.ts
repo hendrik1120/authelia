@@ -8,16 +8,20 @@ interface PostFirstFactorBody {
     keepMeLoggedIn: boolean;
     targetURL?: string;
     requestMethod?: string;
-    workflow?: string;
-    workflowID?: string;
+    flowID?: string;
+    flow?: string;
+    subflow?: string;
+    userCode?: string;
 }
 
 interface PostFirstFactorReauthenticateBody {
     password: string;
     targetURL?: string;
     requestMethod?: string;
-    workflow?: string;
-    workflowID?: string;
+    flowID?: string;
+    flow?: string;
+    subflow?: string;
+    userCode?: string;
 }
 
 export async function postFirstFactor(
@@ -26,95 +30,73 @@ export async function postFirstFactor(
     rememberMe: boolean,
     targetURL?: string,
     requestMethod?: string,
-    workflow?: string,
-    workflowID?: string,
+    flowID?: string,
+    flow?: string,
+    subflow?: string,
+    userCode?: string,
 ) {
     const data: PostFirstFactorBody = {
-        username,
-        password,
+        flow,
+        flowID,
         keepMeLoggedIn: rememberMe,
+        password,
+        requestMethod,
+        subflow,
+        targetURL,
+        userCode,
+        username,
     };
 
-    if (targetURL) {
-        data.targetURL = targetURL;
-    }
-
-    if (requestMethod) {
-        data.requestMethod = requestMethod;
-    }
-
-    if (workflow) {
-        data.workflow = workflow;
-    }
-
-    if (workflowID) {
-        data.workflowID = workflowID;
-    }
-
     const res = await PostWithOptionalResponse<SignInResponse>(FirstFactorPath, data);
-    return res ? res : ({} as SignInResponse);
+    return res ?? ({} as SignInResponse);
 }
 
 export async function postFirstFactorReauthenticate(
     password: string,
     targetURL?: string,
     requestMethod?: string,
-    workflow?: string,
-    workflowID?: string,
+    flowID?: string,
+    flow?: string,
+    subflow?: string,
+    userCode?: string,
 ) {
     const data: PostFirstFactorReauthenticateBody = {
+        flow,
+        flowID,
         password,
+        requestMethod,
+        subflow,
+        targetURL,
+        userCode,
     };
 
-    if (targetURL) {
-        data.targetURL = targetURL;
-    }
-
-    if (requestMethod) {
-        data.requestMethod = requestMethod;
-    }
-
-    if (workflow) {
-        data.workflow = workflow;
-    }
-
-    if (workflowID) {
-        data.workflowID = workflowID;
-    }
-
     const res = await PostWithOptionalResponse<SignInResponse>(FirstFactorReauthenticatePath, data);
-    return res ? res : ({} as SignInResponse);
+    return res ?? ({} as SignInResponse);
 }
 
 interface PostSecondFactorBody {
     password: string;
     targetURL?: string;
-    workflow?: string;
-    workflowID?: string;
+    flowID?: string;
+    flow?: string;
+    subflow?: string;
 }
 
 export async function postSecondFactor(
     password: string,
     targetURL?: string | undefined,
-    workflow?: string,
-    workflowID?: string,
+    flowID?: string,
+    flow?: string,
+    subflow?: string,
 ) {
     const data: PostSecondFactorBody = {
+        flow,
+        flowID,
         password,
+        subflow,
+        targetURL,
     };
 
-    if (targetURL) {
-        data.targetURL = targetURL;
-    }
-
-    if (workflow) {
-        data.workflow = workflow;
-    }
-
-    if (workflowID) {
-        data.workflowID = workflowID;
-    }
-
     const res = await PostWithOptionalResponse<SignInResponse>(CompletePasswordSignInPath, data);
-    return res ? res : ({} as SignInResponse);
+    return res ?? ({} as SignInResponse);
 }

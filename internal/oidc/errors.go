@@ -1,13 +1,19 @@
 package oidc
 
 import (
+	"context"
 	"errors"
+	"net/http"
+	"net/url"
+	"strconv"
+
+	"github.com/valyala/fasthttp"
 
 	oauthelia2 "authelia.com/provider/oauth2"
 )
 
 var (
-	errClientSecretMismatch = errors.New("The provided client secret did not match the registered client secret.")
+	errClientSecretMismatch = errors.New("The provided client secret did not match the registered client secret.") //nolint:staticcheck // Log error message.
 )
 
 var (
@@ -31,3 +37,60 @@ var (
 
 	ErrClientAuthorizationUserAccessDenied = oauthelia2.ErrAccessDenied.WithHint("The user was denied access to this client.")
 )
+
+type RedirectAuthorizeErrorFieldResponseStrategyConfig interface {
+	oauthelia2.SendDebugMessagesToClientsProvider
+	GetContext(ctx context.Context) (octx Context)
+}
+
+type RedirectAuthorizeErrorFieldResponseStrategy struct {
+	Config RedirectAuthorizeErrorFieldResponseStrategyConfig
+}
+
+func (s *RedirectAuthorizeErrorFieldResponseStrategy) WriteErrorFieldResponse(ctx context.Context, rw http.ResponseWriter, requester oauthelia2.AuthorizeRequester, rfc *oauthelia2.RFC6749Error) {
+	var (
+		issuer *url.URL
+		err    error
+	)
+
+	ctxx := s.Config.GetContext(ctx)
+
+	if issuer, err = ctxx.IssuerURL(); err != nil {
+		return
+	}
+
+	if rfc == nil {
+		rfc = oauthelia2.ErrServerError
+	}
+
+	location := issuer.JoinPath(FrontendEndpointPathConsentCompletion)
+
+	query := location.Query()
+
+	if len(rfc.ErrorField) != 0 {
+		query.Set("error", rfc.ErrorField)
+	}
+
+	if len(rfc.DescriptionField) != 0 {
+		query.Set("error_description", rfc.DescriptionField)
+	}
+
+	if rfc.CodeField != 0 {
+		query.Set("error_status_code", strconv.Itoa(rfc.CodeField))
+	}
+
+	if len(rfc.HintField) != 0 {
+		query.Set("error_hint", rfc.HintField)
+	}
+
+	if s.Config.GetSendDebugMessagesToClients(ctx) && len(rfc.DebugField) != 0 {
+		query.Set("error_debug", rfc.DebugField)
+	}
+
+	location.RawQuery = query.Encode()
+
+	rw.Header().Set(fasthttp.HeaderCacheControl, "no-store")
+	rw.Header().Set(fasthttp.HeaderPragma, "no-cache")
+	rw.Header().Set(fasthttp.HeaderLocation, location.String())
+	rw.WriteHeader(http.StatusFound)
+}

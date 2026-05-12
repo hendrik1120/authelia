@@ -1,72 +1,96 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { Theme, Typography } from "@mui/material";
-import makeStyles from "@mui/styles/makeStyles";
+import { Typography } from "@mui/material";
+import axios from "axios";
 import { useTranslation } from "react-i18next";
-import { Navigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 import { IndexRoute } from "@constants/Routes";
-import { RedirectionURL } from "@constants/SearchParams";
-import { useIsMountedRef } from "@hooks/Mounted";
-import { useNotifications } from "@hooks/NotificationsContext";
+import { RedirectionRestoreURL, RedirectionURL } from "@constants/SearchParams";
+import { useNotifications } from "@contexts/NotificationsContext";
 import { useQueryParam } from "@hooks/QueryParam";
 import { useRedirector } from "@hooks/Redirector";
+import { useRouterNavigate } from "@hooks/RouterNavigate";
 import MinimalLayout from "@layouts/MinimalLayout";
 import { signOut } from "@services/SignOut";
 
-export interface Props {}
+const SignOut = function () {
+    const { t: translate } = useTranslation();
 
-const SignOut = function (props: Props) {
-    const mounted = useIsMountedRef();
-    const styles = useStyles();
     const { createErrorNotification } = useNotifications();
     const redirectionURL = useQueryParam(RedirectionURL);
     const redirector = useRedirector();
+    const navigate = useRouterNavigate();
     const [timedOut, setTimedOut] = useState(false);
     const [safeRedirect, setSafeRedirect] = useState(false);
-    const { t: translate } = useTranslation();
+    const [query] = useSearchParams();
 
-    const doSignOut = useCallback(async () => {
-        try {
-            const res = await signOut(redirectionURL);
-            if (res !== undefined && res.safeTargetURL) {
-                setSafeRedirect(true);
-            }
-            setTimeout(() => {
-                if (!mounted) {
-                    return;
-                }
-                setTimedOut(true);
-            }, 2000);
-        } catch (err) {
-            console.error(err);
-            createErrorNotification(translate("There was an issue signing out"));
-        }
-    }, [createErrorNotification, redirectionURL, setSafeRedirect, setTimedOut, mounted, translate]);
-
-    useEffect(() => {
-        doSignOut();
-    }, [doSignOut]);
-
-    if (timedOut) {
+    const handleRedirection = useCallback(() => {
         if (redirectionURL && safeRedirect) {
+            console.log("Redirecting to safe target URL: " + redirectionURL);
             redirector(redirectionURL);
         } else {
-            return <Navigate to={IndexRoute} />;
+            console.log("Redirecting to index route");
+
+            if (query.has(RedirectionRestoreURL)) {
+                const search = new URLSearchParams();
+
+                for (const [key, value] of query) {
+                    if (key === RedirectionRestoreURL) {
+                        search.set(RedirectionURL, value);
+                    } else {
+                        search.set(key, value);
+                    }
+                }
+
+                navigate(IndexRoute, false, false, false, search);
+            } else {
+                navigate(IndexRoute);
+            }
         }
-    }
+    }, [redirectionURL, safeRedirect, query, redirector, navigate]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+        (async () => {
+            try {
+                const res = await signOut(redirectionURL, controller.signal);
+                if (res?.safeTargetURL) {
+                    setSafeRedirect(true);
+                }
+                timeoutId = setTimeout(() => {
+                    setTimedOut(true);
+                }, 2000);
+            } catch (err) {
+                if (axios.isCancel(err)) return;
+                console.error(err);
+                createErrorNotification(translate("There was an issue signing out"));
+            }
+        })();
+
+        return () => {
+            controller.abort();
+            if (timeoutId !== undefined) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, [redirectionURL, createErrorNotification, translate]);
+
+    useEffect(() => {
+        if (timedOut) {
+            handleRedirection();
+        }
+    }, [timedOut, handleRedirection]);
 
     return (
         <MinimalLayout title={translate("Sign out")}>
-            <Typography className={styles.typo}>{translate("You're being signed out and redirected")}...</Typography>
+            <Typography sx={{ padding: (theme) => theme.spacing() }}>
+                {translate("You're being signed out and redirected")}...
+            </Typography>
         </MinimalLayout>
     );
 };
 
 export default SignOut;
-
-const useStyles = makeStyles((theme: Theme) => ({
-    typo: {
-        padding: theme.spacing(),
-    },
-}));

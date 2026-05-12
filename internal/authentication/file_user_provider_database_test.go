@@ -42,9 +42,10 @@ func TestDatabaseModel_Read(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	assert.EqualError(t, model.Read(f), "could not parse the YAML database: yaml: line 2: found character that cannot start any token")
+	assert.EqualError(t, model.Read(f), "could not parse the YAML database: yaml: while scanning for the next token at line 2: found character that cannot start any token")
 }
 
+//nolint:gosec // Test Credentials.
 func TestDatabaseModelExtended(t *testing.T) {
 	mustParseURI := func(in string) *url.URL {
 		if u, err := url.ParseRequestURI(in); err != nil {
@@ -290,7 +291,7 @@ func TestDatabaseModelExtended(t *testing.T) {
 					ValueType:   "string",
 				},
 			},
-			"error occurred parsing user details for 'example': failed to parse the profile attribute with value 'notascheme://authelia.com/jsmith': invalid URL scheme 'notascheme' for profile attribute",
+			"error occurred parsing user details for 'example': failed to parse the 'profile' attribute with value 'notascheme://authelia.com/jsmith': invalid URL scheme 'notascheme' for the attribute",
 			"",
 		},
 		{
@@ -327,7 +328,7 @@ func TestDatabaseModelExtended(t *testing.T) {
 			nil,
 			nil,
 			map[string]expression.ExtraAttribute{},
-			"error occurred parsing user details for 'example': failed to parse the website attribute with value 'https://@@:)!(@*#U!()@#!@.com': parse \"https://@@:)!(@*#U!()@#!@.com\": net/url: invalid userinfo",
+			"error occurred parsing user details for 'example': failed to parse the 'website' attribute with value 'https://@@:)!(@*#U!()@#!@.com': parse \"https://@@:)!(@*#U!()@#!@.com\": net/url: invalid userinfo",
 			"error occurred validating extra attributes for user 'example': attribute 'example' is unknown",
 		},
 		{
@@ -369,7 +370,7 @@ func TestDatabaseModelExtended(t *testing.T) {
 					ValueType:   "integer",
 				},
 			},
-			"error occurred parsing user details for 'example': failed to parse the picture attribute with value 'ahttps://authelia.com/jsmith.jpg': invalid URL scheme 'ahttps' for profile attribute",
+			"error occurred parsing user details for 'example': failed to parse the 'picture' attribute with value 'ahttps://authelia.com/jsmith.jpg': invalid URL scheme 'ahttps' for the attribute",
 			"",
 		},
 		{

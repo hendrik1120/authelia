@@ -1,26 +1,19 @@
-import React from "react";
-
-import { Theme } from "@mui/material";
+import { CSSProperties } from "react";
 
 declare module "@mui/material/styles" {
     interface Theme {
         custom: {
-            icon: React.CSSProperties["color"];
-            loadingBar: React.CSSProperties["color"];
+            icon: CSSProperties["color"];
+            loadingBar: CSSProperties["color"];
         };
     }
 
     interface ThemeOptions {
         custom?: {
-            icon?: React.CSSProperties["color"];
-            loadingBar?: React.CSSProperties["color"];
+            icon?: CSSProperties["color"];
+            loadingBar?: CSSProperties["color"];
         };
     }
-}
-
-declare module "@mui/styles/defaultTheme" {
-    // eslint-disable-next-line @typescript-eslint/no-empty-interface
-    interface DefaultTheme extends Theme {}
 }
 
 export const ThemeNameAuto = "auto";

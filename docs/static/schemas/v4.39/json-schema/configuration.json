@@ -132,6 +132,7 @@
         },
         "methods": {
           "$ref": "#/$defs/AccessControlRuleMethods",
+          "title": "Methods",
           "description": "The list of request methods this rule applies to."
         },
         "query": {
@@ -316,12 +317,12 @@
         "password_reset": {
           "$ref": "#/$defs/AuthenticationBackendPasswordReset",
           "title": "Password Reset",
-          "description": "Allows configuration of the password reset behaviour."
+          "description": "Allows configuration of the password reset behavior."
         },
         "password_change": {
           "$ref": "#/$defs/AuthenticationBackendPasswordChange",
-          "title": "Password Reset",
-          "description": "Allows configuration of the password reset behaviour."
+          "title": "Password Change",
+          "description": "Allows configuration of the password change behavior."
         },
         "refresh_interval": {
           "$ref": "#/$defs/RefreshIntervalDuration",
@@ -385,7 +386,7 @@
         "search": {
           "$ref": "#/$defs/AuthenticationBackendFileSearch",
           "title": "Search",
-          "description": "Configures the user searching behaviour."
+          "description": "Configures the user searching behavior."
         },
         "extra_attributes": {
           "patternProperties": {
@@ -433,14 +434,14 @@
           "description": "Configure the PBKDF2 password hashing parameters."
         },
         "bcrypt": {
-          "$ref": "#/$defs/AuthenticationBackendFilePasswordBCrypt",
-          "title": "BCrypt",
-          "description": "Configure the BCrypt password hashing parameters."
+          "$ref": "#/$defs/AuthenticationBackendFilePasswordBcrypt",
+          "title": "Bcrypt",
+          "description": "Configure the Bcrypt password hashing parameters."
         },
         "scrypt": {
-          "$ref": "#/$defs/AuthenticationBackendFilePasswordSCrypt",
-          "title": "SCrypt",
-          "description": "Configure the SCrypt password hashing parameters."
+          "$ref": "#/$defs/AuthenticationBackendFilePasswordScrypt",
+          "title": "Scrypt",
+          "description": "Configure the Scrypt password hashing parameters."
         },
         "iterations": {
           "type": "integer",
@@ -533,7 +534,7 @@
       "type": "object",
       "description": "AuthenticationBackendFilePasswordArgon2 represents the argon2 hashing settings."
     },
-    "AuthenticationBackendFilePasswordBCrypt": {
+    "AuthenticationBackendFilePasswordBcrypt": {
       "properties": {
         "variant": {
           "type": "string",
@@ -542,7 +543,7 @@
             "sha256"
           ],
           "title": "Variant",
-          "description": "The BCrypt variant to be used.",
+          "description": "The Bcrypt variant to be used.",
           "default": "standard"
         },
         "cost": {
@@ -550,13 +551,13 @@
           "maximum": 31,
           "minimum": 10,
           "title": "Cost",
-          "description": "The BCrypt cost to be used.",
+          "description": "The Bcrypt cost to be used.",
           "default": 12
         }
       },
       "additionalProperties": false,
       "type": "object",
-      "description": "AuthenticationBackendFilePasswordBCrypt represents the bcrypt hashing settings."
+      "description": "AuthenticationBackendFilePasswordBcrypt represents the bcrypt hashing settings."
     },
     "AuthenticationBackendFilePasswordPBKDF2": {
       "properties": {
@@ -594,53 +595,6 @@
       "type": "object",
       "description": "AuthenticationBackendFilePasswordPBKDF2 represents the PBKDF2 hashing settings."
     },
-    "AuthenticationBackendFilePasswordSCrypt": {
-      "properties": {
-        "iterations": {
-          "type": "integer",
-          "maximum": 58,
-          "minimum": 1,
-          "title": "Iterations",
-          "description": "The SCrypt iterations to be used.",
-          "default": 16
-        },
-        "block_size": {
-          "type": "integer",
-          "maximum": 36028797018963967,
-          "minimum": 1,
-          "title": "Key Length",
-          "description": "The SCrypt block size to be used.",
-          "default": 8
-        },
-        "parallelism": {
-          "type": "integer",
-          "maximum": 1073741823,
-          "minimum": 1,
-          "title": "Key Length",
-          "description": "The SCrypt parallelism factor to be used.",
-          "default": 1
-        },
-        "key_length": {
-          "type": "integer",
-          "maximum": 137438953440,
-          "minimum": 1,
-          "title": "Key Length",
-          "description": "The SCrypt key length to be used.",
-          "default": 32
-        },
-        "salt_length": {
-          "type": "integer",
-          "maximum": 1024,
-          "minimum": 8,
-          "title": "Salt Length",
-          "description": "The SCrypt salt length to be used.",
-          "default": 16
-        }
-      },
-      "additionalProperties": false,
-      "type": "object",
-      "description": "AuthenticationBackendFilePasswordSCrypt represents the scrypt hashing settings."
-    },
     "AuthenticationBackendFilePasswordSHA2Crypt": {
       "properties": {
         "variant": {
@@ -673,6 +627,63 @@
       "additionalProperties": false,
       "type": "object",
       "description": "AuthenticationBackendFilePasswordSHA2Crypt represents the sha2crypt hashing settings."
+    },
+    "AuthenticationBackendFilePasswordScrypt": {
+      "properties": {
+        "variant": {
+          "type": "string",
+          "enum": [
+            "scrypt",
+            "yescrypt"
+          ],
+          "title": "Variant",
+          "description": "The Scrypt variant to be used.",
+          "default": "scrypt"
+        },
+        "iterations": {
+          "type": "integer",
+          "maximum": 58,
+          "minimum": 1,
+          "title": "Iterations",
+          "description": "The Scrypt iterations to be used.",
+          "default": 16
+        },
+        "block_size": {
+          "type": "integer",
+          "maximum": 36028797018963967,
+          "minimum": 1,
+          "title": "Block Size",
+          "description": "The Scrypt block size to be used.",
+          "default": 8
+        },
+        "parallelism": {
+          "type": "integer",
+          "maximum": 1073741823,
+          "minimum": 1,
+          "title": "Parallelism",
+          "description": "The Scrypt parallelism factor to be used.",
+          "default": 1
+        },
+        "key_length": {
+          "type": "integer",
+          "maximum": 137438953440,
+          "minimum": 1,
+          "title": "Key Length",
+          "description": "The Scrypt key length to be used.",
+          "default": 32
+        },
+        "salt_length": {
+          "type": "integer",
+          "maximum": 1024,
+          "minimum": 8,
+          "title": "Salt Length",
+          "description": "The Scrypt salt length to be used.",
+          "default": 16
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "description": "AuthenticationBackendFilePasswordScrypt represents the scrypt hashing settings."
     },
     "AuthenticationBackendFileSearch": {
       "properties": {
@@ -718,7 +729,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -780,7 +791,9 @@
           "default": "filter"
         },
         "attributes": {
-          "$ref": "#/$defs/AuthenticationBackendLDAPAttributes"
+          "$ref": "#/$defs/AuthenticationBackendLDAPAttributes",
+          "title": "Attributes",
+          "description": "The LDAP directory server attributes."
         },
         "permit_referrals": {
           "type": "boolean",
@@ -792,12 +805,6 @@
           "type": "boolean",
           "title": "Permit Unauthenticated Bind",
           "description": "Enables omission of the password to perform an unauthenticated bind.",
-          "default": false
-        },
-        "permit_feature_detection_failure": {
-          "type": "boolean",
-          "title": "Permit Feature Detection Failure",
-          "description": "Enables failures when detecting directory server features using the Root DSE lookup.",
           "default": false
         },
         "user": {
@@ -927,7 +934,7 @@
           "title": "Attribute: User Mail",
           "description": "The directory server attribute which contains the mail address for all users and groups."
         },
-        "MemberOf": {
+        "member_of": {
           "type": "string",
           "title": "Attribute: Member Of",
           "description": "The directory server attribute which contains the objects that an object is a member of."
@@ -1002,7 +1009,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -1254,7 +1261,9 @@
     "IdentityProviders": {
       "properties": {
         "oidc": {
-          "$ref": "#/$defs/IdentityProvidersOpenIDConnect"
+          "$ref": "#/$defs/IdentityProvidersOpenIDConnect",
+          "title": "OpenID Connect 1.0",
+          "description": "OpenID Connect 1.0 configuration."
         }
       },
       "additionalProperties": false,
@@ -1314,6 +1323,7 @@
         "discovery_signed_response_alg": {
           "type": "string",
           "enum": [
+            "",
             "none",
             "RS256",
             "RS384",
@@ -1474,12 +1484,7 @@
           "default": "specification"
         },
         "custom_claims": {
-          "patternProperties": {
-            ".*": {
-              "$ref": "#/$defs/IdentityProvidersOpenIDConnectCustomClaim"
-            }
-          },
-          "type": "object",
+          "$ref": "#/$defs/IdentityProvidersOpenIDConnectCustomClaims",
           "title": "Custom Claims",
           "description": "The custom claims available in this policy in addition to the Standard Claims."
         }
@@ -1542,9 +1547,11 @@
             "enum": [
               "openid",
               "offline_access",
-              "groups",
-              "email",
               "profile",
+              "email",
+              "address",
+              "phone",
+              "groups",
               "authelia.bearer.authz"
             ]
           },
@@ -1644,7 +1651,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -1669,6 +1676,7 @@
         "pkce_challenge_method": {
           "type": "string",
           "enum": [
+            "",
             "plain",
             "S256"
           ],
@@ -1678,7 +1686,10 @@
         "authorization_signed_response_alg": {
           "type": "string",
           "enum": [
-            "none",
+            "",
+            "HS256",
+            "HS384",
+            "HS512",
             "RS256",
             "RS384",
             "RS512",
@@ -1691,7 +1702,7 @@
           ],
           "title": "Authorization Signing Algorithm",
           "description": "The JOSE signing algorithm (JWS) this client uses to sign the Authorization objects that it generates and responds with. i.e. the JWS 'alg' value.",
-          "default": "none"
+          "default": "RS256"
         },
         "authorization_signed_response_key_id": {
           "type": "string",
@@ -1701,6 +1712,8 @@
         "authorization_encrypted_response_alg": {
           "type": "string",
           "enum": [
+            "",
+            "none",
             "RSA1_5",
             "RSA-OAEP",
             "RSA-OAEP-256",
@@ -1720,11 +1733,13 @@
             "PBES2-HS512+A256KW"
           ],
           "title": "Authorization Encryption Algorithm (CEK)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Authorization objects CEK that it generates and responds with. i.e. the JWE 'alg' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Authorization objects CEK that it generates and responds with. i.e. the JWE 'alg' value.",
+          "default": "none"
         },
         "authorization_encrypted_response_enc": {
           "type": "string",
           "enum": [
+            "",
             "A128CBC-HS256",
             "A192CBC-HS384",
             "A256CBC-HS512",
@@ -1733,16 +1748,21 @@
             "A256GCM"
           ],
           "title": "Authorization Encryption Algorithm (Content)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Authorization objects content that it generates and responds with. i.e. the JWE 'enc' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Authorization objects content that it generates and responds with. i.e. the JWE 'enc' value.",
+          "default": "A128CBC-HS256"
         },
         "authorization_encrypted_response_key_id": {
           "type": "string",
           "title": "Authorization Signing Key ID",
-          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the Authorization objects that it generates and responds with. This value overrides the 'authorization_encrypted_response_alg' and '%!s(MISSING)_encrypted_response_enc'. i.e. the JWE 'kid' value."
+          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the Authorization objects that it generates and responds with. This value overrides the 'authorization_encrypted_response_alg' and 'authorization_encrypted_response_enc'. i.e. the JWE 'kid' value."
         },
         "id_token_signed_response_alg": {
           "type": "string",
           "enum": [
+            "",
+            "HS256",
+            "HS384",
+            "HS512",
             "RS256",
             "RS384",
             "RS512",
@@ -1765,6 +1785,8 @@
         "id_token_encrypted_response_alg": {
           "type": "string",
           "enum": [
+            "",
+            "none",
             "RSA1_5",
             "RSA-OAEP",
             "RSA-OAEP-256",
@@ -1784,11 +1806,13 @@
             "PBES2-HS512+A256KW"
           ],
           "title": "ID Token Encryption Algorithm (CEK)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the ID Token objects CEK that it generates and responds with. i.e. the JWE 'alg' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the ID Token objects CEK that it generates and responds with. i.e. the JWE 'alg' value.",
+          "default": "none"
         },
         "id_token_encrypted_response_enc": {
           "type": "string",
           "enum": [
+            "",
             "A128CBC-HS256",
             "A192CBC-HS384",
             "A256CBC-HS512",
@@ -1797,17 +1821,22 @@
             "A256GCM"
           ],
           "title": "ID Token Encryption Algorithm (Content)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the ID Token objects content that it generates and responds with. i.e. the JWE 'enc' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the ID Token objects content that it generates and responds with. i.e. the JWE 'enc' value.",
+          "default": "A128CBC-HS256"
         },
         "id_token_encrypted_response_key_id": {
           "type": "string",
           "title": "ID Token Signing Key ID",
-          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the ID Token objects that it generates and responds with. This value overrides the 'id_token_encrypted_response_alg' and '%!s(MISSING)_encrypted_response_enc'. i.e. the JWE 'kid' value."
+          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the ID Token objects that it generates and responds with. This value overrides the 'id_token_encrypted_response_alg' and 'id_token_encrypted_response_enc'. i.e. the JWE 'kid' value."
         },
         "access_token_signed_response_alg": {
           "type": "string",
           "enum": [
+            "",
             "none",
+            "HS256",
+            "HS384",
+            "HS512",
             "RS256",
             "RS384",
             "RS512",
@@ -1830,6 +1859,8 @@
         "access_token_encrypted_response_alg": {
           "type": "string",
           "enum": [
+            "",
+            "none",
             "RSA1_5",
             "RSA-OAEP",
             "RSA-OAEP-256",
@@ -1849,11 +1880,13 @@
             "PBES2-HS512+A256KW"
           ],
           "title": "Access Token Encryption Algorithm (CEK)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Access Token objects CEK that it generates and responds with. i.e. the JWE 'alg' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Access Token objects CEK that it generates and responds with. i.e. the JWE 'alg' value.",
+          "default": "none"
         },
         "access_token_encrypted_response_enc": {
           "type": "string",
           "enum": [
+            "",
             "A128CBC-HS256",
             "A192CBC-HS384",
             "A256CBC-HS512",
@@ -1862,17 +1895,22 @@
             "A256GCM"
           ],
           "title": "Access Token Encryption Algorithm (Content)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Access Token objects content that it generates and responds with. i.e. the JWE 'enc' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Access Token objects content that it generates and responds with. i.e. the JWE 'enc' value.",
+          "default": "A128CBC-HS256"
         },
         "access_token_encrypted_response_key_id": {
           "type": "string",
           "title": "Access Token Signing Key ID",
-          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the Access Token objects that it generates and responds with. This value overrides the 'access_token_encrypted_response_alg' and '%!s(MISSING)_encrypted_response_enc'. i.e. the JWE 'kid' value."
+          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the Access Token objects that it generates and responds with. This value overrides the 'access_token_encrypted_response_alg' and 'access_token_encrypted_response_enc'. i.e. the JWE 'kid' value."
         },
         "userinfo_signed_response_alg": {
           "type": "string",
           "enum": [
+            "",
             "none",
+            "HS256",
+            "HS384",
+            "HS512",
             "RS256",
             "RS384",
             "RS512",
@@ -1895,6 +1933,8 @@
         "userinfo_encrypted_response_alg": {
           "type": "string",
           "enum": [
+            "",
+            "none",
             "RSA1_5",
             "RSA-OAEP",
             "RSA-OAEP-256",
@@ -1914,11 +1954,13 @@
             "PBES2-HS512+A256KW"
           ],
           "title": "Userinfo Encryption Algorithm (CEK)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Userinfo objects CEK that it generates and responds with. i.e. the JWE 'alg' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Userinfo objects CEK that it generates and responds with. i.e. the JWE 'alg' value.",
+          "default": "none"
         },
         "userinfo_encrypted_response_enc": {
           "type": "string",
           "enum": [
+            "",
             "A128CBC-HS256",
             "A192CBC-HS384",
             "A256CBC-HS512",
@@ -1927,17 +1969,22 @@
             "A256GCM"
           ],
           "title": "Userinfo Encryption Algorithm (Content)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Userinfo objects content that it generates and responds with. i.e. the JWE 'enc' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Userinfo objects content that it generates and responds with. i.e. the JWE 'enc' value.",
+          "default": "A128CBC-HS256"
         },
         "userinfo_encrypted_response_key_id": {
           "type": "string",
           "title": "Userinfo Signing Key ID",
-          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the Userinfo objects that it generates and responds with. This value overrides the 'userinfo_encrypted_response_alg' and '%!s(MISSING)_encrypted_response_enc'. i.e. the JWE 'kid' value."
+          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the Userinfo objects that it generates and responds with. This value overrides the 'userinfo_encrypted_response_alg' and 'userinfo_encrypted_response_enc'. i.e. the JWE 'kid' value."
         },
         "introspection_signed_response_alg": {
           "type": "string",
           "enum": [
+            "",
             "none",
+            "HS256",
+            "HS384",
+            "HS512",
             "RS256",
             "RS384",
             "RS512",
@@ -1960,6 +2007,8 @@
         "introspection_encrypted_response_alg": {
           "type": "string",
           "enum": [
+            "",
+            "none",
             "RSA1_5",
             "RSA-OAEP",
             "RSA-OAEP-256",
@@ -1979,11 +2028,13 @@
             "PBES2-HS512+A256KW"
           ],
           "title": "Introspection Encryption Algorithm (CEK)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Introspection objects CEK that it generates and responds with. i.e. the JWE 'alg' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Introspection objects CEK that it generates and responds with. i.e. the JWE 'alg' value.",
+          "default": "none"
         },
         "introspection_encrypted_response_enc": {
           "type": "string",
           "enum": [
+            "",
             "A128CBC-HS256",
             "A192CBC-HS384",
             "A256CBC-HS512",
@@ -1992,16 +2043,19 @@
             "A256GCM"
           ],
           "title": "Introspection Encryption Algorithm (Content)",
-          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Introspection objects content that it generates and responds with. i.e. the JWE 'enc' value."
+          "description": "The JOSE encryption algorithm (JWE) this client uses to encrypt the Introspection objects content that it generates and responds with. i.e. the JWE 'enc' value.",
+          "default": "A128CBC-HS256"
         },
         "introspection_encrypted_response_key_id": {
           "type": "string",
           "title": "Introspection Signing Key ID",
-          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the Introspection objects that it generates and responds with. This value overrides the 'introspection_encrypted_response_alg' and '%!s(MISSING)_encrypted_response_enc'. i.e. the JWE 'kid' value."
+          "description": "The Key ID of a JOSE encryption key (JWE) this client uses to encrypt the Introspection objects that it generates and responds with. This value overrides the 'introspection_encrypted_response_alg' and 'introspection_encrypted_response_enc'. i.e. the JWE 'kid' value."
         },
         "request_object_signing_alg": {
           "type": "string",
           "enum": [
+            "",
+            "none",
             "RS256",
             "RS384",
             "RS512",
@@ -2018,6 +2072,8 @@
         "request_object_encryption_alg": {
           "type": "string",
           "enum": [
+            "",
+            "none",
             "RSA1_5",
             "RSA-OAEP",
             "RSA-OAEP-256",
@@ -2037,11 +2093,13 @@
             "PBES2-HS512+A256KW"
           ],
           "title": "Request Object Encryption Algorithm (CEK)",
-          "description": "The JOSE encryption algorithm (JWE) this client must use to encrypt the Request Object CEK. i.e. the JWE 'alg' value."
+          "description": "The JOSE encryption algorithm (JWE) this client must use to encrypt the Request Object CEK. i.e. the JWE 'alg' value.",
+          "default": "none"
         },
         "request_object_encryption_enc": {
           "type": "string",
           "enum": [
+            "",
             "A128CBC-HS256",
             "A192CBC-HS384",
             "A256CBC-HS512",
@@ -2050,11 +2108,13 @@
             "A256GCM"
           ],
           "title": "Request Object Encryption Algorithm (Content)",
-          "description": "The JOSE encryption algorithm (JWE) this client must use to encrypt the Request Object content. i.e. the JWE 'enc' value."
+          "description": "The JOSE encryption algorithm (JWE) this client must use to encrypt the Request Object content. i.e. the JWE 'enc' value.",
+          "default": "A128CBC-HS256"
         },
         "token_endpoint_auth_method": {
           "type": "string",
           "enum": [
+            "",
             "none",
             "client_secret_post",
             "client_secret_basic",
@@ -2062,11 +2122,13 @@
             "client_secret_jwt"
           ],
           "title": "Token Endpoint Auth Method",
-          "description": "The Token Endpoint Auth Method enforced by the provider for this client."
+          "description": "The Token Endpoint Auth Method enforced by the provider for this client.",
+          "default": "client_secret_basic"
         },
         "token_endpoint_auth_signing_alg": {
           "type": "string",
           "enum": [
+            "",
             "HS256",
             "HS384",
             "HS512",
@@ -2086,6 +2148,7 @@
         "revocation_endpoint_auth_method": {
           "type": "string",
           "enum": [
+            "",
             "none",
             "client_secret_post",
             "client_secret_basic",
@@ -2093,11 +2156,13 @@
             "client_secret_jwt"
           ],
           "title": "Revocation Endpoint Auth Method",
-          "description": "The Revocation Endpoint Auth Method enforced by the provider for this client."
+          "description": "The Revocation Endpoint Auth Method enforced by the provider for this client.",
+          "default": "client_secret_basic"
         },
         "revocation_endpoint_auth_signing_alg": {
           "type": "string",
           "enum": [
+            "",
             "HS256",
             "HS384",
             "HS512",
@@ -2117,6 +2182,7 @@
         "introspection_endpoint_auth_method": {
           "type": "string",
           "enum": [
+            "",
             "none",
             "client_secret_post",
             "client_secret_basic",
@@ -2124,11 +2190,13 @@
             "client_secret_jwt"
           ],
           "title": "Introspection Endpoint Auth Method",
-          "description": "The Introspection Endpoint Auth Method enforced by the provider for this client."
+          "description": "The Introspection Endpoint Auth Method enforced by the provider for this client.",
+          "default": "client_secret_basic"
         },
         "introspection_endpoint_auth_signing_alg": {
           "type": "string",
           "enum": [
+            "",
             "HS256",
             "HS384",
             "HS512",
@@ -2148,6 +2216,7 @@
         "pushed_authorization_request_endpoint_auth_method": {
           "type": "string",
           "enum": [
+            "",
             "none",
             "client_secret_post",
             "client_secret_basic",
@@ -2155,11 +2224,13 @@
             "client_secret_jwt"
           ],
           "title": "Pushed Authorization Request Endpoint Auth Method",
-          "description": "The Pushed Authorization Request Endpoint Auth Method enforced by the provider for this client."
+          "description": "The Pushed Authorization Request Endpoint Auth Method enforced by the provider for this client.",
+          "default": "client_secret_basic"
         },
         "pushed_authorization_request_endpoint_auth_signing_alg": {
           "type": "string",
           "enum": [
+            "",
             "HS256",
             "HS384",
             "HS512",
@@ -2222,6 +2293,11 @@
     },
     "IdentityProvidersOpenIDConnectCustomClaim": {
       "properties": {
+        "name": {
+          "type": "string",
+          "title": "Name",
+          "description": "The name of claim."
+        },
         "attribute": {
           "type": "string",
           "title": "Attribute",
@@ -2231,13 +2307,21 @@
       "additionalProperties": false,
       "type": "object"
     },
+    "IdentityProvidersOpenIDConnectCustomClaims": {
+      "patternProperties": {
+        ".*": {
+          "$ref": "#/$defs/IdentityProvidersOpenIDConnectCustomClaim"
+        }
+      },
+      "type": "object"
+    },
     "IdentityProvidersOpenIDConnectLifespan": {
       "properties": {
         "access_token": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2247,25 +2331,25 @@
           "title": "Access Token Lifespan",
           "description": "The duration an Access Token is valid for."
         },
-        "authorize_code": {
+        "refresh_token": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
-          "title": "Authorize Code Lifespan",
-          "description": "The duration an Authorization Code is valid for."
+          "title": "Refresh Token Lifespan",
+          "description": "The duration a Refresh Token is valid for."
         },
         "id_token": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2275,19 +2359,33 @@
           "title": "ID Token Lifespan",
           "description": "The duration an ID Token is valid for."
         },
-        "refresh_token": {
+        "authorize_code": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
-          "title": "Refresh Token Lifespan",
-          "description": "The duration a Refresh Token is valid for."
+          "title": "Authorize Code Lifespan",
+          "description": "The duration an Authorization Code is valid for."
+        },
+        "device_code": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+            },
+            {
+              "type": "integer",
+              "description": "The duration in seconds"
+            }
+          ],
+          "title": "Device Code Lifespan",
+          "description": "The duration an Device Code is valid for."
         },
         "grants": {
           "$ref": "#/$defs/IdentityProvidersOpenIDConnectLifespanGrants",
@@ -2305,6 +2403,11 @@
           "$ref": "#/$defs/IdentityProvidersOpenIDConnectLifespanToken",
           "title": "Authorize Code Grant",
           "description": "Allows tuning the token lifespans for the authorize code grant."
+        },
+        "device_code": {
+          "$ref": "#/$defs/IdentityProvidersOpenIDConnectLifespanToken",
+          "title": "Device Code Grant",
+          "description": "Allows tuning the token lifespans for the device code grant."
         },
         "implicit": {
           "$ref": "#/$defs/IdentityProvidersOpenIDConnectLifespanToken",
@@ -2337,7 +2440,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2347,25 +2450,25 @@
           "title": "Access Token Lifespan",
           "description": "The duration an Access Token is valid for."
         },
-        "authorize_code": {
+        "refresh_token": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
-          "title": "Authorize Code Lifespan",
-          "description": "The duration an Authorization Code is valid for."
+          "title": "Refresh Token Lifespan",
+          "description": "The duration a Refresh Token is valid for."
         },
         "id_token": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2375,19 +2478,19 @@
           "title": "ID Token Lifespan",
           "description": "The duration an ID Token is valid for."
         },
-        "refresh_token": {
+        "authorize_code": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
-          "title": "Refresh Token Lifespan",
-          "description": "The duration a Refresh Token is valid for."
+          "title": "Authorize Code Lifespan",
+          "description": "The duration an Authorization Code is valid for."
         }
       },
       "additionalProperties": false,
@@ -2400,7 +2503,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2410,39 +2513,11 @@
           "title": "Access Token Lifespan",
           "description": "The duration an Access Token is valid for."
         },
-        "authorize_code": {
-          "oneOf": [
-            {
-              "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
-            },
-            {
-              "type": "integer",
-              "description": "The duration in seconds"
-            }
-          ],
-          "title": "Authorize Code Lifespan",
-          "description": "The duration an Authorization Code is valid for."
-        },
-        "id_token": {
-          "oneOf": [
-            {
-              "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
-            },
-            {
-              "type": "integer",
-              "description": "The duration in seconds"
-            }
-          ],
-          "title": "ID Token Lifespan",
-          "description": "The duration an ID Token is valid for."
-        },
         "refresh_token": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2452,11 +2527,53 @@
           "title": "Refresh Token Lifespan",
           "description": "The duration a Refresh Token is valid for."
         },
+        "id_token": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+            },
+            {
+              "type": "integer",
+              "description": "The duration in seconds"
+            }
+          ],
+          "title": "ID Token Lifespan",
+          "description": "The duration an ID Token is valid for."
+        },
+        "authorize_code": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+            },
+            {
+              "type": "integer",
+              "description": "The duration in seconds"
+            }
+          ],
+          "title": "Authorize Code Lifespan",
+          "description": "The duration an Authorization Code is valid for."
+        },
+        "device_code": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+            },
+            {
+              "type": "integer",
+              "description": "The duration in seconds"
+            }
+          ],
+          "title": "Device Code Lifespan",
+          "description": "The duration an Device Code is valid for."
+        },
         "jwt_secured_authorization": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2579,7 +2696,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2593,7 +2710,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2603,7 +2720,7 @@
           "title": "Elevation Lifespan",
           "description": "The lifespan of the elevation after initially validating the One-Time Code before it expires."
         },
-        "otp_characters": {
+        "characters": {
           "type": "integer",
           "maximum": 12,
           "minimum": 6,
@@ -2634,7 +2751,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2704,6 +2821,7 @@
         "key": {
           "type": "string",
           "pattern": "^-{5}BEGIN (((RSA|EC) )?(PRIVATE|PUBLIC) KEY|CERTIFICATE)-{5}\\n([a-zA-Z0-9\\/+]{1,64}\\n)+([a-zA-Z0-9\\/+]{1,64}[=]{0,2})\\n-{5}END (((RSA|EC) )?(PRIVATE|PUBLIC) KEY|CERTIFICATE)-{5}\\n?$",
+          "title": "Key",
           "description": "The Private/Public key material of this JWK in Base64 PEM format."
         },
         "certificate_chain": {
@@ -2775,7 +2893,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2794,7 +2912,7 @@
         "disable_failure": {
           "type": "boolean",
           "title": "Disable Failure",
-          "description": "Disables complete failure whe the Startup Check fails and instead just logs the error.",
+          "description": "Disables complete failure when the Startup Check fails and instead just logs the error.",
           "default": false
         }
       },
@@ -2853,7 +2971,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -2916,7 +3034,7 @@
         "disable_require_tls": {
           "type": "boolean",
           "title": "Disable Require TLS",
-          "description": "Disables the requirement to use TLS.",
+          "description": "Disables the requirement to use TLS. This means security critical information and SMTP auth credentials will be sent in the clear due to an unencrypted connection. While this option exists, we heavily discourage it and do not support it.",
           "default": false
         },
         "disable_html_emails": {
@@ -3075,7 +3193,7 @@
         },
         {
           "type": "string",
-          "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+          "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
         },
         {
           "type": "integer",
@@ -3111,7 +3229,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3125,7 +3243,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3210,13 +3328,18 @@
     "ServerEndpointRateLimit": {
       "properties": {
         "enable": {
-          "type": "boolean"
+          "type": "boolean",
+          "title": "Enable",
+          "description": "Enables the rate limiter for this endpoint.",
+          "default": true
         },
         "buckets": {
           "items": {
             "$ref": "#/$defs/ServerEndpointRateLimitBucket"
           },
-          "type": "array"
+          "type": "array",
+          "title": "Buckets",
+          "description": "The list of rate limit buckets."
         }
       },
       "additionalProperties": false,
@@ -3228,17 +3351,19 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
+          "title": "Period",
           "description": "The period of time this rate limit bucket applies to."
         },
         "requests": {
           "type": "integer",
+          "title": "Requests",
           "description": "The number of requests allowed in this rate limit bucket for the configured period before the rate limit kicks in."
         }
       },
@@ -3248,22 +3373,44 @@
     "ServerEndpointRateLimits": {
       "properties": {
         "reset_password_start": {
-          "$ref": "#/$defs/ServerEndpointRateLimit"
+          "$ref": "#/$defs/ServerEndpointRateLimit",
+          "title": "Reset Password Start",
+          "description": "Configures the rate limiter which applies to the endpoint that initializes the reset password flow."
         },
         "reset_password_finish": {
-          "$ref": "#/$defs/ServerEndpointRateLimit"
+          "$ref": "#/$defs/ServerEndpointRateLimit",
+          "title": "Reset Password Finish",
+          "description": "Configures the rate limiter which applies to endpoints which consume tokens for the reset password flow."
         },
         "second_factor_totp": {
-          "$ref": "#/$defs/ServerEndpointRateLimit"
+          "$ref": "#/$defs/ServerEndpointRateLimit",
+          "title": "Second Factor TOTP",
+          "description": "Configures the rate limiter which applies to the TOTP endpoint code submissions for the second factor flow."
         },
         "second_factor_duo": {
-          "$ref": "#/$defs/ServerEndpointRateLimit"
+          "$ref": "#/$defs/ServerEndpointRateLimit",
+          "title": "Second Factor Duo",
+          "description": "Configures the rate limiter which applies to the Duo endpoint which initializes the application authorization flow for the second factor flow."
         },
         "session_elevation_start": {
-          "$ref": "#/$defs/ServerEndpointRateLimit"
+          "$ref": "#/$defs/ServerEndpointRateLimit",
+          "title": "Session Elevation Start",
+          "description": "Configures the rate limiter which applies to the Elevated Session endpoint which initializes the code generation and notification for the elevated session flow."
         },
         "session_elevation_finish": {
-          "$ref": "#/$defs/ServerEndpointRateLimit"
+          "$ref": "#/$defs/ServerEndpointRateLimit",
+          "title": "Session Elevation Finish",
+          "description": "Configures the rate limiter which applies to the Elevated Session endpoint which consumes the code for the elevated session flow."
+        },
+        "openid_connect_token": {
+          "$ref": "#/$defs/ServerEndpointRateLimit",
+          "title": "OpenID Connect Token",
+          "description": "Configures the rate limiter which applies to the OpenID Connect 1.0 Token Endpoint."
+        },
+        "openid_connect_pushed_authorization_request": {
+          "$ref": "#/$defs/ServerEndpointRateLimit",
+          "title": "OpenID Connect Pushed Authorization Request",
+          "description": "Configures the rate limiter which applies to the OpenID Connect 1.0 Pushed Authorization Request Endpoint."
         }
       },
       "additionalProperties": false,
@@ -3284,7 +3431,9 @@
           "default": false
         },
         "rate_limits": {
-          "$ref": "#/$defs/ServerEndpointRateLimits"
+          "$ref": "#/$defs/ServerEndpointRateLimits",
+          "title": "Rate Limits",
+          "description": "Configure the endpoint rate limits."
         },
         "authz": {
           "patternProperties": {
@@ -3360,7 +3509,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3381,7 +3530,7 @@
           "type": "string",
           "title": "CSP Template",
           "description": "The Content Security Policy template.",
-          "default": "default-src 'self'; frame-src 'none'; object-src 'none'; style-src 'self' 'nonce-%s'; frame-ancestors 'none'; base-uri 'self'"
+          "default": "default-src 'self'; base-uri 'self'; connect-src 'self'; frame-ancestors 'none'; frame-src 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'nonce-%s' 'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='"
         }
       },
       "additionalProperties": false,
@@ -3420,7 +3569,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3434,7 +3583,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3448,7 +3597,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3467,6 +3616,7 @@
       "properties": {
         "name": {
           "type": "string",
+          "title": "Name",
           "description": "The session cookie name.",
           "default": "authelia_session"
         },
@@ -3477,6 +3627,7 @@
             "strict",
             "none"
           ],
+          "title": "Same Site",
           "description": "The session cookie same site value.",
           "default": "lax"
         },
@@ -3484,39 +3635,42 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
+          "title": "Expiration",
           "description": "The session cookie expiration when remember me is not checked."
         },
         "inactivity": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
+          "title": "Inactivity",
           "description": "The session inactivity timeout."
         },
         "remember_me": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
+          "title": "Remember Me",
           "description": "The session cookie expiration when remember me is checked."
         },
         "secret": {
@@ -3552,6 +3706,7 @@
       "properties": {
         "name": {
           "type": "string",
+          "title": "Name",
           "description": "The session cookie name.",
           "default": "authelia_session"
         },
@@ -3562,6 +3717,7 @@
             "strict",
             "none"
           ],
+          "title": "Same Site",
           "description": "The session cookie same site value.",
           "default": "lax"
         },
@@ -3569,39 +3725,42 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
+          "title": "Expiration",
           "description": "The session cookie expiration when remember me is not checked."
         },
         "inactivity": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
+          "title": "Inactivity",
           "description": "The session inactivity timeout."
         },
         "remember_me": {
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
               "description": "The duration in seconds"
             }
           ],
+          "title": "Remember Me",
           "description": "The session cookie expiration when remember me is checked."
         },
         "domain": {
@@ -3636,7 +3795,7 @@
         },
         "port": {
           "type": "integer",
-          "title": "Host",
+          "title": "Port",
           "description": "The redis server port.",
           "default": 6379
         },
@@ -3644,7 +3803,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3688,10 +3847,14 @@
           "description": "The minimum idle connections that should be open to redis."
         },
         "tls": {
-          "$ref": "#/$defs/TLS"
+          "$ref": "#/$defs/TLS",
+          "title": "TLS",
+          "description": "The TLS configuration for the redis server."
         },
         "high_availability": {
-          "$ref": "#/$defs/SessionRedisHighAvailability"
+          "$ref": "#/$defs/SessionRedisHighAvailability",
+          "title": "High Availability",
+          "description": "The redis high availability configuration."
         }
       },
       "additionalProperties": false,
@@ -3712,8 +3875,8 @@
         },
         "sentinel_password": {
           "type": "string",
-          "title": "Sentinel Username",
-          "description": "The username for the sentinel instance."
+          "title": "Sentinel Password",
+          "description": "The password for the sentinel instance."
         },
         "route_by_latency": {
           "type": "boolean",
@@ -3823,7 +3986,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3834,7 +3997,9 @@
           "description": "The timeout for the database connection."
         },
         "tls": {
-          "$ref": "#/$defs/TLS"
+          "$ref": "#/$defs/TLS",
+          "title": "TLS",
+          "description": "The TLS configuration for the SQL Server."
         }
       },
       "additionalProperties": false,
@@ -3867,7 +4032,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -3878,7 +4043,9 @@
           "description": "The timeout for the database connection."
         },
         "tls": {
-          "$ref": "#/$defs/TLS"
+          "$ref": "#/$defs/TLS",
+          "title": "TLS",
+          "description": "The TLS configuration for the SQL Server."
         },
         "schema": {
           "type": "string",
@@ -3950,7 +4117,9 @@
           "description": "The address of the PostgreSQL Server."
         },
         "tls": {
-          "$ref": "#/$defs/TLS"
+          "$ref": "#/$defs/TLS",
+          "title": "TLS",
+          "description": "The TLS configuration for the PostgreSQL Server."
         }
       },
       "additionalProperties": false,
@@ -3999,9 +4168,13 @@
     "TLSVersion": {
       "type": "string",
       "enum": [
+        "TLS 1.0",
         "TLS1.0",
+        "TLS 1.1",
         "TLS1.1",
+        "TLS 1.2",
         "TLS1.2",
+        "TLS 1.3",
         "TLS1.3"
       ]
     },
@@ -4194,6 +4367,12 @@
           "description": "This option is experimental and WILL be removed. When true this will consider a Passkey login where the WebAuthn user verification requirement is met as being a single event 2FA login.",
           "default": false
         },
+        "experimental_enable_passkey_upgrade": {
+          "type": "boolean",
+          "title": "Experimental: Enable User Verified Passkey Second Factor",
+          "description": "When true this will attempt to automatically upgrade a WebAuthn credential to a Passkey when the browser or authenticator does not report a newly registered WebAuthn credential to be a Passkey.",
+          "default": false
+        },
         "display_name": {
           "type": "string",
           "title": "Display Name",
@@ -4215,7 +4394,7 @@
           "oneOf": [
             {
               "type": "string",
-              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
+              "pattern": "^\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\\s*(\\s+and\\s+)?\\d+\\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$"
             },
             {
               "type": "integer",
@@ -4232,10 +4411,12 @@
         },
         "selection_criteria": {
           "$ref": "#/$defs/WebAuthnSelectionCriteria",
+          "title": "Selection Criteria",
           "description": "WebAuthn Authenticator selection criteria settings."
         },
         "metadata": {
           "$ref": "#/$defs/WebAuthnMetadata",
+          "title": "Metadata",
           "description": "WebAuthn Metadata Service settings."
         }
       },
@@ -4279,6 +4460,16 @@
           "description": "Enables the use of the WebAuthn Metadata Service.",
           "default": false
         },
+        "cache_policy": {
+          "type": "string",
+          "enum": [
+            "strict",
+            "relaxed"
+          ],
+          "title": "Cache Policy",
+          "description": "WebAuthn Authenticator metadata cache policy.",
+          "default": "strict"
+        },
         "validate_trust_anchor": {
           "type": "boolean",
           "title": "Validate Trust Anchor",
@@ -4287,14 +4478,14 @@
         },
         "validate_entry": {
           "type": "boolean",
-          "title": "Filtering",
+          "title": "Validate Entry",
           "description": "WebAuthn Authenticator metadata entry validation requires the AAGUID exists as a MDS3 registered entry.",
           "default": true
         },
         "validate_entry_permit_zero_aaguid": {
           "type": "boolean",
-          "title": "Filtering",
-          "description": "WebAuthn Authenticator metadata entry validation zero AAGUID's can be skipped'.",
+          "title": "Validate Entry Permit Zero AAGUID",
+          "description": "WebAuthn Authenticator metadata entry validation zero AAGUID's can be skipped.",
           "default": true
         },
         "validate_status": {
@@ -4362,6 +4553,7 @@
         "attachment": {
           "type": "string",
           "enum": [
+            "",
             "platform",
             "cross-platform"
           ],

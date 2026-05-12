@@ -2,7 +2,7 @@
 title: "Traefik"
 description: "An integration guide for Authelia and the Traefik reverse proxy"
 summary: "A guide on integrating Authelia with the Traefik reverse proxy."
-date: 2022-06-15T17:51:47+10:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 370
@@ -44,7 +44,13 @@ It's __*strongly recommended*__ that users setting up *Authelia* for the first t
 [Get started](../prologue/get-started.md) guide. This takes you through various steps which are essential to
 bootstrapping *Authelia*.
 
-## Trusted Proxies
+## Trusted Proxies and Integration Security
+
+{{< callout context="danger" title="Security Note" icon="outline/alert-octagon" >}}
+In addition to this section which is important to read, you should read the
+[Validating Forwarded Authentication](../../reference/guides/validating-forwarded-authentication.md) reference guide
+and perform the validation steps as part of your regular security validation routine when using this integration.
+{{< /callout >}}
 
 *__Important:__ You should read the [Forwarded Headers] section and this section as part of any proxy configuration.
 Especially if you have never read it before.*
@@ -164,7 +170,7 @@ networks:
 services:
   traefik:
     container_name: 'traefik'
-    image: 'traefik:v3.1'
+    image: 'traefik:v3.5'
     restart: 'unless-stopped'
     command:
       - '--api=true'
@@ -229,6 +235,7 @@ services:
       ## configured in the Session Cookies section of the Authelia configuration.
       # traefik.http.middlewares.authelia.forwardAuth.address: '{{< sitevar name="tls" nojs="http" >}}://{{< sitevar name="host" nojs="authelia" >}}:{{< sitevar name="port" nojs="9091" >}}/api/authz/forward-auth?authelia_url=https%3A%2F%2F{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}%2F'
       traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader: 'true'
+      traefik.http.middlewares.authelia.forwardAuth.maxResponseBodySize: '8192'
       traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders: 'Remote-User,Remote-Groups,Remote-Email,Remote-Name'
   nextcloud:
     container_name: 'nextcloud'
@@ -292,7 +299,7 @@ networks:
 services:
   traefik:
     container_name: 'traefik'
-    image: 'traefik:v3.1'
+    image: 'traefik:v3.5'
     restart: 'unless-stopped'
     command:
       - '--api=true'
@@ -424,6 +431,7 @@ http:
         ## configured in the Session Cookies section of the Authelia configuration.
         # address: '{{< sitevar name="tls" nojs="http" >}}://{{< sitevar name="host" nojs="authelia" >}}:{{< sitevar name="port" nojs="9091" >}}/api/authz/forward-auth?authelia_url=https%3A%2F%2F{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}%2F'
         trustForwardHeader: true
+        maxResponseBodySize: 8192
         authResponseHeaders:
           - 'Remote-User'
           - 'Remote-Groups'
@@ -437,6 +445,7 @@ http:
       forwardAuth:
         address: '{{< sitevar name="tls" nojs="http" >}}://{{< sitevar name="host" nojs="authelia" >}}:{{< sitevar name="port" nojs="9091" >}}/api/verify?auth=basic'
         trustForwardHeader: true
+        maxResponseBodySize: 8192
         authResponseHeaders:
           - 'Remote-User'
           - 'Remote-Groups'
@@ -526,6 +535,11 @@ http:
 ...
 ```
 
+## Kubernetes
+
+Authelia supports some of the [Traefik] based Kubernetes Ingress. See the
+[Kubernetes Integration Guide](../kubernetes/traefik-ingress.md) for more information.
+
 ## Frequently Asked Questions
 
 ### Basic Authentication
@@ -544,7 +558,7 @@ complains that: `middleware authelia@docker not found`.
 This can be avoided a couple different ways:
 
 1. Ensure __Authelia__ container is up before [Traefik] is started:
-   * Utilise the [depends_on](https://docs.docker.com/compose/compose-file/#depends_on) option
+   * Utilize the [depends_on](https://docs.docker.com/compose/compose-file/#depends_on) option
 2. Define the __Authelia__ middleware on your [Traefik] container. See the below example.
 
 ```yaml {title="compose.yml"}
@@ -553,6 +567,7 @@ traefik.http.middlewares.authelia.forwardAuth.address: '{{< sitevar name="tls" n
 ## configured in the Session Cookies section of the Authelia configuration.
 # traefik.http.middlewares.authelia.forwardAuth.address: '{{< sitevar name="tls" nojs="http" >}}://{{< sitevar name="host" nojs="authelia" >}}:{{< sitevar name="port" nojs="9091" >}}/api/authz/forward-auth?authelia_url=https%3A%2F%2F{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}%2F'
 traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader: 'true'
+traefik.http.middlewares.authelia.forwardAuth.maxResponseBodySize: '8192'
 traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders: 'Remote-User,Remote-Groups,Remote-Email,Remote-Name'
 ```
 

@@ -2,7 +2,7 @@
 title: "Kubernetes"
 description: "An introduction into integrating Authelia with Kubernetes."
 summary: "An introduction into integrating Authelia with Kubernetes."
-date: 2022-06-15T17:51:47+10:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 510
@@ -17,17 +17,6 @@ seo:
 ---
 
 {{< figure src="images/logos/kubernetes.png" alt="Kubernetes" width="100" style="padding-right: 10px" ignoreStaticImages="false" >}}
-
-## UNDER CONSTRUCTION
-
-The following areas are actively being worked on for Kubernetes:
-
-1. Detailed Documentation
-2. [Helm Chart](chart.md) for Helm v3
-3. Kustomize Deployment
-4. Manifest Examples
-
-Users are welcome to reach out directly by using any of our various [contact options](../../information/contact.md).
 
 ## Get started
 

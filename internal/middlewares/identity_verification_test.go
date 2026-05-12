@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/valyala/fasthttp"
 	"go.uber.org/mock/gomock"
@@ -38,6 +39,12 @@ func defaultRetriever(ctx *middlewares.AutheliaCtx) (*session.Identity, error) {
 	}, nil
 }
 
+func TestIdentityVerificationStart_ShouldPanic(t *testing.T) {
+	assert.PanicsWithError(t, "identity verification requires an identity retriever", func() {
+		middlewares.IdentityVerificationStart(newArgs(nil), nil)
+	})
+}
+
 func TestShouldFailStartingProcessIfUserHasNoEmailAddress(t *testing.T) {
 	mock := mocks.NewMockAutheliaCtx(t)
 	defer mock.Close()
@@ -57,13 +64,16 @@ func TestShouldFailIfJWTCannotBeSaved(t *testing.T) {
 	defer mock.Close()
 
 	mock.Ctx.Configuration.IdentityValidation.ResetPassword.JWTSecret = testJWTSecret
+	mock.Ctx.Configuration.IdentityValidation.ResetPassword.JWTAlgorithm = ""
 
 	mock.StorageMock.EXPECT().
 		SaveIdentityVerification(mock.Ctx, gomock.Any()).
 		Return(fmt.Errorf("cannot save"))
 
 	args := newArgs(defaultRetriever)
-	middlewares.IdentityVerificationStart(args, nil)(mock.Ctx)
+	middlewares.IdentityVerificationStart(args, func(ctx *middlewares.AutheliaCtx, requestTime time.Time, successful *bool) {
+		time.Sleep(time.Millisecond * 10)
+	})(mock.Ctx)
 
 	assert.Equal(t, fasthttp.StatusOK, mock.Ctx.Response.StatusCode())
 	assert.Equal(t, "cannot save", mock.Hook.LastEntry().Message)
@@ -74,6 +84,7 @@ func TestShouldFailSendingAnEmail(t *testing.T) {
 	defer mock.Close()
 
 	mock.Ctx.Configuration.IdentityValidation.ResetPassword.JWTSecret = testJWTSecret
+	mock.Ctx.Configuration.IdentityValidation.ResetPassword.JWTAlgorithm = "HS512"
 	mock.Ctx.Request.Header.Add(fasthttp.HeaderXForwardedProto, "http")
 	mock.Ctx.Request.Header.Add(fasthttp.HeaderXForwardedHost, "host")
 
@@ -96,6 +107,31 @@ func TestShouldSucceedIdentityVerificationStartProcess(t *testing.T) {
 	mock := mocks.NewMockAutheliaCtx(t)
 
 	mock.Ctx.Configuration.IdentityValidation.ResetPassword.JWTSecret = testJWTSecret
+	mock.Ctx.Configuration.IdentityValidation.ResetPassword.JWTAlgorithm = "HS384"
+	mock.Ctx.Request.Header.Add(fasthttp.HeaderXForwardedProto, "http")
+	mock.Ctx.Request.Header.Add(fasthttp.HeaderXForwardedHost, "host")
+
+	mock.StorageMock.EXPECT().
+		SaveIdentityVerification(mock.Ctx, gomock.Any()).
+		Return(nil)
+
+	mock.NotifierMock.EXPECT().
+		Send(gomock.Eq(mock.Ctx), gomock.Eq(mail.Address{Address: "john@example.com"}), gomock.Eq("Title"), gomock.Any(), gomock.Any()).
+		Return(nil)
+
+	args := newArgs(defaultRetriever)
+	middlewares.IdentityVerificationStart(args, nil)(mock.Ctx)
+
+	assert.Equal(t, fasthttp.StatusOK, mock.Ctx.Response.StatusCode())
+
+	defer mock.Close()
+}
+
+func TestShouldSucceedIdentityVerificationStartProcessHS256(t *testing.T) {
+	mock := mocks.NewMockAutheliaCtx(t)
+
+	mock.Ctx.Configuration.IdentityValidation.ResetPassword.JWTSecret = testJWTSecret
+	mock.Ctx.Configuration.IdentityValidation.ResetPassword.JWTAlgorithm = "HS256"
 	mock.Ctx.Request.Header.Add(fasthttp.HeaderXForwardedProto, "http")
 	mock.Ctx.Request.Header.Add(fasthttp.HeaderXForwardedHost, "host")
 
@@ -132,12 +168,17 @@ func (s *IdentityVerificationFinishProcess) TearDownTest() {
 	s.mock.Close()
 }
 
-func createToken(ctx *mocks.MockAutheliaCtx, username, action string, expiresAt time.Time) (data string, verification model.IdentityVerification) {
+func createToken(t *testing.T, ctx *mocks.MockAutheliaCtx, username, action string, expiresAt time.Time) (data string, verification model.IdentityVerification) {
+	t.Helper()
+
 	verification = model.NewIdentityVerification(uuid.New(), username, action, ctx.Ctx.RemoteIP(), time.Minute*5)
 
 	verification.ExpiresAt = expiresAt
 
-	claims := verification.ToIdentityVerificationClaim()
+	issuerURL, err := ctx.Ctx.IssuerURL()
+	require.NoError(t, err)
+
+	claims := verification.ToIdentityVerificationClaim(issuerURL)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	ss, _ := token.SignedString([]byte(ctx.Ctx.Configuration.IdentityValidation.ResetPassword.JWTSecret))
@@ -166,11 +207,11 @@ func (s *IdentityVerificationFinishProcess) TestShouldFailIfTokenIsNotProvided()
 	middlewares.IdentityVerificationFinish(newFinishArgs(), next)(s.mock.Ctx)
 
 	s.mock.Assert200KO(s.T(), "Operation failed")
-	assert.Equal(s.T(), "No token provided", s.mock.Hook.LastEntry().Message)
+	assert.Equal(s.T(), "no token provided", s.mock.Hook.LastEntry().Message)
 }
 
 func (s *IdentityVerificationFinishProcess) TestShouldFailIfTokenIsNotFoundInDB() {
-	token, verification := createToken(s.mock, "john", "Login",
+	token, verification := createToken(s.T(), s.mock, "john", "Login",
 		time.Now().Add(1*time.Minute))
 
 	s.mock.Ctx.Request.SetBodyString(fmt.Sprintf("{\"token\":\"%s\"}", token))
@@ -196,7 +237,7 @@ func (s *IdentityVerificationFinishProcess) TestShouldFailIfTokenIsInvalid() {
 
 func (s *IdentityVerificationFinishProcess) TestShouldFailIfTokenExpired() {
 	args := newArgs(defaultRetriever)
-	token, _ := createToken(s.mock, "john", args.ActionClaim,
+	token, _ := createToken(s.T(), s.mock, "john", args.ActionClaim,
 		time.Now().Add(-1*time.Minute))
 	s.mock.Ctx.Request.SetBodyString(fmt.Sprintf("{\"token\":\"%s\"}", token))
 
@@ -207,7 +248,7 @@ func (s *IdentityVerificationFinishProcess) TestShouldFailIfTokenExpired() {
 }
 
 func (s *IdentityVerificationFinishProcess) TestShouldFailForWrongAction() {
-	token, verification := createToken(s.mock, "", "",
+	token, verification := createToken(s.T(), s.mock, "", "",
 		time.Now().Add(1*time.Minute))
 	s.mock.Ctx.Request.SetBodyString(fmt.Sprintf("{\"token\":\"%s\"}", token))
 
@@ -222,7 +263,7 @@ func (s *IdentityVerificationFinishProcess) TestShouldFailForWrongAction() {
 }
 
 func (s *IdentityVerificationFinishProcess) TestShouldFailForWrongUser() {
-	token, verification := createToken(s.mock, "harry", "EXP_ACTION",
+	token, verification := createToken(s.T(), s.mock, "harry", "EXP_ACTION",
 		time.Now().Add(1*time.Minute))
 	s.mock.Ctx.Request.SetBodyString(fmt.Sprintf("{\"token\":\"%s\"}", token))
 
@@ -239,7 +280,7 @@ func (s *IdentityVerificationFinishProcess) TestShouldFailForWrongUser() {
 }
 
 func (s *IdentityVerificationFinishProcess) TestShouldFailIfTokenCannotBeRemovedFromDB() {
-	token, verification := createToken(s.mock, "john", "EXP_ACTION",
+	token, verification := createToken(s.T(), s.mock, "john", "EXP_ACTION",
 		time.Now().Add(1*time.Minute))
 	s.mock.Ctx.Request.SetBodyString(fmt.Sprintf("{\"token\":\"%s\"}", token))
 
@@ -258,7 +299,7 @@ func (s *IdentityVerificationFinishProcess) TestShouldFailIfTokenCannotBeRemoved
 }
 
 func (s *IdentityVerificationFinishProcess) TestShouldReturn200OnFinishComplete() {
-	token, verification := createToken(s.mock, "john", "EXP_ACTION",
+	token, verification := createToken(s.T(), s.mock, "john", "EXP_ACTION",
 		time.Now().Add(1*time.Minute))
 	s.mock.Ctx.Request.SetBodyString(fmt.Sprintf("{\"token\":\"%s\"}", token))
 

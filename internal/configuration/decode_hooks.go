@@ -19,13 +19,47 @@ import (
 	"github.com/go-crypt/crypt/algorithm/plaintext"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/google/uuid"
+	"golang.org/x/text/language"
 
 	"github.com/authelia/authelia/v4/internal/configuration/schema"
 	"github.com/authelia/authelia/v4/internal/utils"
 )
 
+// DecodeHooksComposeAll composes all decode hooks given a set of definitions.
+func DecodeHooksComposeAll(definitions *schema.Definitions) mapstructure.DecodeHookFunc {
+	return mapstructure.ComposeDecodeHookFunc(
+		mapstructure.StringToSliceHookFunc(","),
+		StringToMailAddressHookFunc(),
+		StringToURLHookFunc(),
+		StringToRegexpHookFunc(),
+		StringToAddressHookFunc(),
+		StringToX509CertificateHookFunc(),
+		StringToX509CertificateChainHookFunc(),
+		StringToPrivateKeyHookFunc(),
+		StringToCryptoPrivateKeyHookFunc(),
+		StringToCryptographicKeyHookFunc(),
+		StringToTLSVersionHookFunc(),
+		StringToPasswordDigestHookFunc(),
+		StringToLanguageTagHookFunc(),
+		StringToIPNetworksHookFunc(definitions.Network),
+		StringToUUIDHookFunc(),
+		ToTimeDurationHookFunc(),
+		ToRefreshIntervalDurationHookFunc(),
+	)
+}
+
+// DecodeHooksComposeDefinitions creates and returns a composed decode hook function for decoding definitions.
+func DecodeHooksComposeDefinitions() mapstructure.DecodeHookFunc {
+	return mapstructure.ComposeDecodeHookFunc(
+		mapstructure.StringToSliceHookFunc(","),
+		StringToIPNetworksHookFunc(nil),
+	)
+}
+
 // StringToMailAddressHookFunc decodes a string into a mail.Address or *mail.Address.
 func StringToMailAddressHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(mail.Address{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -35,12 +69,10 @@ func StringToMailAddressHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(mail.Address{})
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -72,6 +104,8 @@ func StringToMailAddressHookFunc() mapstructure.DecodeHookFuncType {
 
 // StringToURLHookFunc converts string types into a url.URL or *url.URL.
 func StringToURLHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(url.URL{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -81,12 +115,10 @@ func StringToURLHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(url.URL{})
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -165,6 +197,8 @@ func DecodeTimeDuration(f, expectedType reflect.Type, prefixType string, data an
 
 // ToRefreshIntervalDurationHookFunc converts string and integer types to a schema.RefreshIntervalDuration.
 func ToRefreshIntervalDurationHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(schema.RefreshIntervalDuration{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -178,12 +212,10 @@ func ToRefreshIntervalDurationHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(schema.RefreshIntervalDuration{})
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -228,18 +260,18 @@ func ToRefreshIntervalDurationHookFunc() mapstructure.DecodeHookFuncType {
 
 // ToTimeDurationHookFunc converts string and integer types to a time.Duration.
 func ToTimeDurationHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(time.Duration(0))
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var (
 			ptr        bool
 			prefixType string
 		)
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(time.Duration(0))
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -271,6 +303,8 @@ func ToTimeDurationHookFunc() mapstructure.DecodeHookFuncType {
 
 // StringToRegexpHookFunc decodes a string into a *regexp.Regexp or regexp.Regexp.
 func StringToRegexpHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(regexp.Regexp{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -280,12 +314,10 @@ func StringToRegexpHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(regexp.Regexp{})
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -319,6 +351,12 @@ func StringToRegexpHookFunc() mapstructure.DecodeHookFuncType {
 //
 //nolint:gocyclo // This is an adequately clear function even with the complexity.
 func StringToAddressHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(schema.Address{})
+	expectedTypeTCP := reflect.TypeOf(schema.AddressTCP{})
+	expectedTypeUDP := reflect.TypeOf(schema.AddressUDP{})
+	expectedTypeLDAP := reflect.TypeOf(schema.AddressLDAP{})
+	expectedTypeSMTP := reflect.TypeOf(schema.AddressSMTP{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -328,16 +366,10 @@ func StringToAddressHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(schema.Address{})
-		expectedTypeTCP := reflect.TypeOf(schema.AddressTCP{})
-		expectedTypeUDP := reflect.TypeOf(schema.AddressUDP{})
-		expectedTypeLDAP := reflect.TypeOf(schema.AddressLDAP{})
-		expectedTypeSMTP := reflect.TypeOf(schema.AddressSMTP{})
 
 		switch {
 		case ptr:
@@ -432,16 +464,16 @@ func StringToAddressHookFunc() mapstructure.DecodeHookFuncType {
 
 // StringToX509CertificateHookFunc decodes strings to x509.Certificate's.
 func StringToX509CertificateHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(x509.Certificate{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		if f.Kind() != reflect.String {
 			return data, nil
 		}
 
-		if t.Kind() != reflect.Ptr {
+		if t.Kind() != reflect.Pointer {
 			return data, nil
 		}
-
-		expectedType := reflect.TypeOf(x509.Certificate{})
 
 		if t.Elem() != expectedType {
 			return data, nil
@@ -472,6 +504,8 @@ func StringToX509CertificateHookFunc() mapstructure.DecodeHookFuncType {
 
 // StringToX509CertificateChainHookFunc decodes strings to schema.X509CertificateChain's.
 func StringToX509CertificateChainHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(schema.X509CertificateChain{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -481,12 +515,10 @@ func StringToX509CertificateChainHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(schema.X509CertificateChain{})
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -520,6 +552,8 @@ func StringToX509CertificateChainHookFunc() mapstructure.DecodeHookFuncType {
 
 // StringToTLSVersionHookFunc decodes strings to schema.TLSVersion's.
 func StringToTLSVersionHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(schema.TLSVersion{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -529,12 +563,10 @@ func StringToTLSVersionHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(schema.TLSVersion{})
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -561,13 +593,12 @@ func StringToTLSVersionHookFunc() mapstructure.DecodeHookFuncType {
 // StringToCryptoPrivateKeyHookFunc decodes strings to schema.CryptographicPrivateKey's.
 func StringToCryptoPrivateKeyHookFunc() mapstructure.DecodeHookFuncType {
 	field, _ := reflect.TypeOf(schema.TLS{}).FieldByName("PrivateKey")
+	expectedType := field.Type
 
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		if f.Kind() != reflect.String {
 			return data, nil
 		}
-
-		expectedType := field.Type
 
 		if t != expectedType {
 			return data, nil
@@ -591,13 +622,13 @@ func StringToCryptoPrivateKeyHookFunc() mapstructure.DecodeHookFuncType {
 
 // StringToCryptographicKeyHookFunc decodes strings to schema.CryptographicKey's.
 func StringToCryptographicKeyHookFunc() mapstructure.DecodeHookFuncType {
+	field, _ := reflect.TypeOf(schema.JWK{}).FieldByName("Key")
+	expectedType := field.Type
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		if f.Kind() != reflect.String {
 			return data, nil
 		}
-
-		field, _ := reflect.TypeOf(schema.JWK{}).FieldByName("Key")
-		expectedType := field.Type
 
 		if t != expectedType {
 			return data, nil
@@ -625,18 +656,18 @@ func StringToCryptographicKeyHookFunc() mapstructure.DecodeHookFuncType {
 //
 //nolint:gocyclo
 func StringToPrivateKeyHookFunc() mapstructure.DecodeHookFuncType {
+	expectedTypeRSA := reflect.TypeOf(rsa.PrivateKey{})
+	expectedTypeECDSA := reflect.TypeOf(ecdsa.PrivateKey{})
+	expectedTypeEd25519 := reflect.TypeOf(ed25519.PrivateKey{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		if f.Kind() != reflect.String {
 			return data, nil
 		}
 
-		if t.Kind() != reflect.Ptr {
+		if t.Kind() != reflect.Pointer {
 			return data, nil
 		}
-
-		expectedTypeRSA := reflect.TypeOf(rsa.PrivateKey{})
-		expectedTypeECDSA := reflect.TypeOf(ecdsa.PrivateKey{})
-		expectedTypeEd25519 := reflect.TypeOf(ed25519.PrivateKey{})
 
 		var (
 			i            any
@@ -709,6 +740,8 @@ func StringToPrivateKeyHookFunc() mapstructure.DecodeHookFuncType {
 
 // StringToPasswordDigestHookFunc decodes a string into a crypt.Digest.
 func StringToPasswordDigestHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(schema.PasswordDigest{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -718,12 +751,10 @@ func StringToPasswordDigestHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(schema.PasswordDigest{})
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -765,15 +796,15 @@ func StringToPasswordDigestHookFunc() mapstructure.DecodeHookFuncType {
 
 //nolint:gocyclo
 func StringToIPNetworksHookFunc(definitions map[string][]*net.IPNet) mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(net.IPNet{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		if f.Kind() != reflect.String && (f.Kind() != reflect.Slice || (f.Elem().Kind() != reflect.Interface && f.Elem().Kind() != reflect.String)) {
 			return data, nil
 		}
 
-		expectedType := reflect.TypeOf(net.IPNet{})
-
-		isSlice := t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Ptr && t.Elem().Elem() == expectedType
-		isKind := t.Kind() == reflect.Ptr && t.Elem() == expectedType
+		isSlice := t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Pointer && t.Elem().Elem() == expectedType
+		isKind := t.Kind() == reflect.Pointer && t.Elem() == expectedType
 
 		if !isSlice && !isKind {
 			return data, nil
@@ -828,6 +859,8 @@ func StringToIPNetworksHookFunc(definitions map[string][]*net.IPNet) mapstructur
 
 // StringToUUIDHookFunc decodes a string into a uuid.UUID.
 func StringToUUIDHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(uuid.UUID{})
+
 	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
 		var ptr bool
 
@@ -837,12 +870,10 @@ func StringToUUIDHookFunc() mapstructure.DecodeHookFuncType {
 
 		prefixType := ""
 
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			ptr = true
 			prefixType = "*"
 		}
-
-		expectedType := reflect.TypeOf(uuid.UUID{})
 
 		if ptr && t.Elem() != expectedType {
 			return data, nil
@@ -863,6 +894,54 @@ func StringToUUIDHookFunc() mapstructure.DecodeHookFuncType {
 		}
 
 		if result, err = uuid.Parse(dataStr); err != nil {
+			return nil, fmt.Errorf(errFmtDecodeHookCouldNotParse, dataStr, prefixType, expectedType.String(), err)
+		}
+
+		if ptr {
+			return &result, nil
+		}
+
+		return result, nil
+	}
+}
+
+// StringToLanguageTagHookFunc decodes a string into a language.Tag.
+func StringToLanguageTagHookFunc() mapstructure.DecodeHookFuncType {
+	expectedType := reflect.TypeOf(language.Tag{})
+
+	return func(f reflect.Type, t reflect.Type, data any) (value any, err error) {
+		var ptr bool
+
+		if f.Kind() != reflect.String {
+			return data, nil
+		}
+
+		prefixType := ""
+
+		if t.Kind() == reflect.Pointer {
+			ptr = true
+			prefixType = "*"
+		}
+
+		if ptr && t.Elem() != expectedType {
+			return data, nil
+		} else if !ptr && t != expectedType {
+			return data, nil
+		}
+
+		dataStr := data.(string)
+
+		var result language.Tag
+
+		if dataStr == "" {
+			if ptr {
+				return (*language.Tag)(nil), nil
+			} else {
+				return nil, fmt.Errorf(errFmtDecodeHookCouldNotParseEmptyValue, prefixType, expectedType.String(), errDecodeNonPtrMustHaveValue)
+			}
+		}
+
+		if result, err = language.Parse(dataStr); err != nil {
 			return nil, fmt.Errorf(errFmtDecodeHookCouldNotParse, dataStr, prefixType, expectedType.String(), err)
 		}
 

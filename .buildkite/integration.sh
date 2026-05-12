@@ -6,7 +6,7 @@ GROUP="unset"
 PREFIX="authelia/"
 TAG="unset"
 
-if [[ "${BUILDKITE_BRANCH}" =~ ^renovate/ ]]; then
+if [[ "${BUILDKITE_BRANCH}" =~ ^renovate- ]]; then
   TAG="renovate"
 elif [[ "${BUILDKITE_BRANCH}" != "master" ]] && [[ ! "${BUILDKITE_BRANCH}" =~ .*:.* ]]; then
   TAG="${BUILDKITE_BRANCH}"
@@ -32,7 +32,7 @@ steps:
   - label: ":docker: Build and Deploy"
     commands:
       - "cd ${DIRECTORY}"
-      - "docker build --tag ${PREFIX}${BUILDKITE_PIPELINE_NAME}:${TAG} --platform linux/amd64 --provenance mode=max,reproducible=true --sbom true --builder buildx --pull --push ."
+      - "docker build --tag ${PREFIX}${BUILDKITE_PIPELINE_NAME}:${TAG} --platform linux/amd64,linux/arm64 --provenance mode=max,reproducible=true --sbom true --builder buildx --pull --push ."
     concurrency: 1
     concurrency_group: "${GROUP}"
     agents:

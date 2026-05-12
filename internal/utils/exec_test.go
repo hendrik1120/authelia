@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +11,12 @@ import (
 )
 
 func TestShouldExecCommandOnAutheliaRootPath(t *testing.T) {
+	suffix := "authelia"
+
+	if pipeline := os.Getenv("BUILDKITE_PIPELINE_SLUG"); pipeline != "" {
+		suffix = pipeline
+	}
+
 	cmd := Command("pwd")
 	result, err := cmd.CombinedOutput()
 	assert.NoError(t, err, "")
@@ -17,7 +24,7 @@ func TestShouldExecCommandOnAutheliaRootPath(t *testing.T) {
 	str := strings.Trim(string(result), "\n")
 
 	assert.NoError(t, err, "")
-	assert.Equal(t, true, strings.HasSuffix(str, "authelia"))
+	assert.Equal(t, true, strings.HasSuffix(str, suffix))
 }
 
 func TestCommandShouldOutputResult(t *testing.T) {
@@ -56,7 +63,7 @@ func TestShouldRunFuncUntilNoError(t *testing.T) {
 	assert.NoError(t, err, "")
 }
 
-func TestShouldFailAfterMaxAttemps(t *testing.T) {
+func TestShouldFailAfterMaxAttempts(t *testing.T) {
 	counter := 0
 
 	err := RunFuncWithRetry(3, 500*time.Millisecond, func() error {

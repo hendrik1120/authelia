@@ -104,8 +104,8 @@ func TestFirstFactorPasskeyGET(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, mock.Ctx.SaveSession(us))
 
-				mock.Ctx.Request.Header.Set("X-Original-URL", "123")
-				mock.Ctx.Request.Header.Set("X-Forwarded-Host", "____")
+				mock.Ctx.Request.Header.Set(fasthttp.HeaderXForwardedProto, "____")
+				mock.Ctx.Request.Header.Set(fasthttp.HeaderXForwardedHost, "____")
 			},
 			regexp.MustCompile(`^\{"status":"KO","message":"Authentication failed, please retry later."}$`),
 			fasthttp.StatusForbidden,
@@ -115,7 +115,7 @@ func TestFirstFactorPasskeyGET(t *testing.T) {
 				assert.Nil(t, us.WebAuthn)
 				assert.NoError(t, err)
 
-				AssertLogEntryMessageAndError(t, mock.Hook.LastEntry(), "Error occurred generating a WebAuthn passkey authentication challenge: error occurred provisioning the configuration", "failed to parse X-Original-URL header: parse \"123\": invalid URI for request")
+				AssertLogEntryMessageAndError(t, mock.Hook.LastEntry(), "Error occurred generating a WebAuthn passkey authentication challenge: error occurred provisioning the configuration", "failed to parse X-Forwarded Headers: parse \"____://____/\": invalid URI for request")
 			},
 		},
 	}
@@ -130,7 +130,7 @@ func TestFirstFactorPasskeyGET(t *testing.T) {
 				mock.Ctx.Configuration.WebAuthn = *tc.config
 			}
 
-			mock.Ctx.Request.Header.Set("X-Original-URL", "https://login.example.com:8080")
+			mock.Ctx.Request.Header.Set(fasthttp.HeaderXForwardedHost, "login.example.com:8080")
 
 			if tc.setup != nil {
 				tc.setup(t, mock)
@@ -188,7 +188,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				gomock.InOrder(
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -249,7 +249,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				gomock.InOrder(
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -285,7 +285,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				gomock.InOrder(
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -309,7 +309,6 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, mock.Ctx.SaveSession(us))
 
-				mock.Ctx.Request.Header.Set("X-Original-URL", "123")
 				mock.Ctx.Request.Header.Set(fasthttp.HeaderXForwardedProto, "123")
 			},
 			dataReqGood,
@@ -321,7 +320,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				assert.Nil(t, us.WebAuthn)
 				assert.NoError(t, err)
 
-				AssertLogEntryMessageAndError(t, mock.LogEntryN(1), "Error occurred validating a WebAuthn passkey authentication challenge: error occurred provisioning the configuration", "failed to parse X-Original-URL header: parse \"123\": invalid URI for request")
+				AssertLogEntryMessageAndError(t, mock.LogEntryN(1), "Error occurred validating a WebAuthn passkey authentication challenge: error occurred provisioning the configuration", "failed to parse X-Forwarded Headers: parse \"123://login.example.com:8080/\": invalid URI for request")
 			},
 		},
 		{
@@ -407,7 +406,112 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(nil, nil),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
+							Successful: true,
+							Banned:     false,
+							Username:   testUsername,
+							Type:       regulation.AuthTypePasskey,
+							RemoteIP:   model.NullIP{IP: net.ParseIP("0.0.0.0")},
+						})).
+						Return(nil),
+				)
+			},
+			have:           dataReqGood,
+			expectedStatus: fasthttp.StatusOK,
+			expectedf: func(t *testing.T, mock *mocks.MockAutheliaCtx) {
+				us, err := mock.Ctx.GetSession()
+
+				require.NoError(t, err)
+
+				assert.Nil(t, us.WebAuthn)
+			},
+		},
+		{
+			name:   "ShouldSuccessUpgrade",
+			config: &schema.DefaultWebAuthnConfiguration,
+			setup: func(t *testing.T, mock *mocks.MockAutheliaCtx) {
+				mock.Ctx.Configuration.WebAuthn.EnablePasskeyUpgrade = true
+
+				us, err := mock.Ctx.GetSession()
+
+				require.NoError(t, err)
+
+				us.WebAuthn = &session.WebAuthn{
+					SessionData: &webauthn.SessionData{
+						Challenge:        "in1cL-oWfSjSd7uuwUvv2ndOAmRXb0cOAbUoTtAqvGE",
+						Expires:          time.Now().Add(time.Minute),
+						UserVerification: "preferred",
+					},
+				}
+
+				require.NoError(t, mock.Ctx.SaveSession(us))
+
+				credential := model.WebAuthnCredential{
+					ID:              1,
+					CreatedAt:       time.Now(),
+					LastUsedAt:      sql.NullTime{Time: mock.Clock.Now().UTC().Add(time.Second * -10), Valid: true},
+					RPID:            "login.example.com",
+					Username:        testUsername,
+					Description:     "test",
+					KID:             model.NewBase64(decode("rwOwV8WCh1hrE0M6mvaoRGpGHidqK6IlhkDJ2xERhPU=")),
+					AAGUID:          uuid.NullUUID{UUID: uuid.Must(uuid.Parse("01020304-0506-0708-0102-030405060708")), Valid: true},
+					AttestationType: "packed",
+					Attachment:      "cross-platform",
+					Transport:       "usb",
+					SignCount:       2,
+					CloneWarning:    false,
+					Discoverable:    true,
+					Present:         true,
+					Verified:        true,
+					BackupEligible:  false,
+					BackupState:     false,
+					PublicKey:       []byte{165, 1, 2, 3, 38, 32, 1, 33, 88, 32, 184, 17, 198, 170, 14, 81, 23, 237, 100, 218, 123, 122, 48, 76, 56, 148, 23, 111, 173, 245, 67, 239, 176, 229, 199, 205, 213, 46, 239, 91, 222, 183, 34, 88, 32, 171, 141, 116, 74, 68, 180, 81, 66, 81, 127, 81, 41, 236, 173, 38, 7, 9, 34, 128, 167, 101, 51, 25, 84, 239, 100, 10, 124, 117, 165, 178, 179},
+				}
+
+				updated := model.WebAuthnCredential{
+					ID:              1,
+					CreatedAt:       credential.CreatedAt,
+					LastUsedAt:      sql.NullTime{Time: mock.Clock.Now().UTC(), Valid: true},
+					RPID:            "login.example.com",
+					Username:        testUsername,
+					Description:     "test",
+					KID:             model.NewBase64(decode("rwOwV8WCh1hrE0M6mvaoRGpGHidqK6IlhkDJ2xERhPU=")),
+					AAGUID:          uuid.NullUUID{UUID: uuid.Must(uuid.Parse("01020304-0506-0708-0102-030405060708")), Valid: true},
+					AttestationType: "packed",
+					Attachment:      "cross-platform",
+					Transport:       "usb",
+					SignCount:       3,
+					CloneWarning:    false,
+					Discoverable:    true,
+					Present:         true,
+					Verified:        true,
+					BackupEligible:  false,
+					BackupState:     false,
+					PublicKey:       []byte{165, 1, 2, 3, 38, 32, 1, 33, 88, 32, 184, 17, 198, 170, 14, 81, 23, 237, 100, 218, 123, 122, 48, 76, 56, 148, 23, 111, 173, 245, 67, 239, 176, 229, 199, 205, 213, 46, 239, 91, 222, 183, 34, 88, 32, 171, 141, 116, 74, 68, 180, 81, 66, 81, 127, 81, 41, 236, 173, 38, 7, 9, 34, 128, 167, 101, 51, 25, 84, 239, 100, 10, 124, 117, 165, 178, 179},
+				}
+
+				gomock.InOrder(
+					mock.StorageMock.EXPECT().
+						LoadWebAuthnUserByUserID(mock.Ctx, gomock.Eq("login.example.com"), gomock.Eq("example")).
+						Return(&model.WebAuthnUser{UserID: "example", Username: testUsername}, nil),
+					mock.StorageMock.EXPECT().
+						LoadWebAuthnCredentialsByUsername(mock.Ctx, gomock.Eq("login.example.com"), gomock.Eq(testUsername)).
+						Return([]model.WebAuthnCredential{credential}, nil),
+					mock.StorageMock.EXPECT().
+						UpdateWebAuthnCredentialSignIn(mock.Ctx, updated).
+						Return(nil),
+					mock.UserProviderMock.EXPECT().
+						GetDetails(gomock.Eq(testUsername)).
+						Return(&authentication.UserDetails{Username: testUsername}, nil),
+					mock.StorageMock.EXPECT().
+						LoadBannedIP(mock.Ctx, gomock.Eq(model.NewIP(mock.Ctx.RemoteIP()))).
+						Return(nil, nil),
+					mock.StorageMock.EXPECT().
+						LoadBannedUser(mock.Ctx, gomock.Eq(testUsername)).
+						Return(nil, nil),
+					mock.StorageMock.EXPECT().
+						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: true,
 							Banned:     false,
 							Username:   testUsername,
@@ -438,7 +542,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				us.WebAuthn = &session.WebAuthn{
 					SessionData: &webauthn.SessionData{
 						Challenge:        "in1cL-oWfSjSd7uuwUvv2ndOAmRXb0cOAbUoTtAqvGE",
-						Expires:          mock.Ctx.Clock.Now().UTC().Add(time.Minute),
+						Expires:          mock.Ctx.Providers.Clock.Now().UTC().Add(time.Minute),
 						UserVerification: "preferred",
 					},
 				}
@@ -447,7 +551,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 
 				credential := model.WebAuthnCredential{
 					ID:              1,
-					CreatedAt:       mock.Ctx.Clock.Now().UTC().Add(time.Second * -10),
+					CreatedAt:       mock.Ctx.Providers.Clock.Now().UTC().Add(time.Second * -10),
 					LastUsedAt:      sql.NullTime{Time: mock.Clock.Now().UTC().Add(time.Second * -10), Valid: true},
 					RPID:            "login.example.com",
 					Username:        testUsername,
@@ -507,10 +611,10 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(nil, nil),
 					mock.StorageMock.EXPECT().
 						LoadBannedUser(mock.Ctx, gomock.Eq(testUsername)).
-						Return([]model.BannedUser{{ID: 1, Time: mock.Ctx.Clock.Now().UTC().Add(time.Second - 10), Expires: sql.NullTime{Time: mock.Ctx.Clock.Now().UTC().Add(time.Minute), Valid: true}, Username: testUsername, Source: "Passkey"}}, nil),
+						Return([]model.BannedUser{{ID: 1, Time: mock.Ctx.Providers.Clock.Now().UTC().Add(-10 * time.Second), Expires: sql.NullTime{Time: mock.Ctx.Providers.Clock.Now().UTC().Add(time.Minute), Valid: true}, Username: testUsername, Source: "Passkey"}}, nil),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     true,
 							Username:   testUsername,
@@ -543,7 +647,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				us.WebAuthn = &session.WebAuthn{
 					SessionData: &webauthn.SessionData{
 						Challenge:        "in1cL-oWfSjSd7uuwUvv2ndOAmRXb0cOAbUoTtAqvGE",
-						Expires:          mock.Ctx.Clock.Now().UTC().Add(time.Minute),
+						Expires:          mock.Ctx.Providers.Clock.Now().UTC().Add(time.Minute),
 						UserVerification: "preferred",
 					},
 				}
@@ -552,7 +656,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 
 				credential := model.WebAuthnCredential{
 					ID:              1,
-					CreatedAt:       mock.Ctx.Clock.Now().UTC().Add(time.Second * -10),
+					CreatedAt:       mock.Ctx.Providers.Clock.Now().UTC().Add(time.Second * -10),
 					LastUsedAt:      sql.NullTime{Time: mock.Clock.Now().UTC().Add(time.Second * -10), Valid: true},
 					RPID:            "login.example.com",
 					Username:        testUsername,
@@ -609,10 +713,10 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(&authentication.UserDetails{Username: testUsername}, nil),
 					mock.StorageMock.EXPECT().
 						LoadBannedIP(mock.Ctx, gomock.Eq(model.NewIP(mock.Ctx.RemoteIP()))).
-						Return([]model.BannedIP{{ID: 1, Time: mock.Ctx.Clock.Now().UTC().Add(time.Second - 10), Expires: sql.NullTime{Time: mock.Ctx.Clock.Now().UTC().Add(time.Minute), Valid: true}}}, nil),
+						Return([]model.BannedIP{{ID: 1, Time: mock.Ctx.Providers.Clock.Now().UTC().Add(time.Second - 10), Expires: sql.NullTime{Time: mock.Ctx.Providers.Clock.Now().UTC().Add(time.Minute), Valid: true}}}, nil),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     true,
 							Username:   testUsername,
@@ -645,7 +749,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				us.WebAuthn = &session.WebAuthn{
 					SessionData: &webauthn.SessionData{
 						Challenge:        "in1cL-oWfSjSd7uuwUvv2ndOAmRXb0cOAbUoTtAqvGE",
-						Expires:          mock.Ctx.Clock.Now().UTC().Add(time.Minute),
+						Expires:          mock.Ctx.Providers.Clock.Now().UTC().Add(time.Minute),
 						UserVerification: "preferred",
 					},
 				}
@@ -654,7 +758,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 
 				credential := model.WebAuthnCredential{
 					ID:              1,
-					CreatedAt:       mock.Ctx.Clock.Now().UTC().Add(time.Second * -10),
+					CreatedAt:       mock.Ctx.Providers.Clock.Now().UTC().Add(time.Second * -10),
 					LastUsedAt:      sql.NullTime{Time: mock.Clock.Now().UTC().Add(time.Second * -10), Valid: true},
 					RPID:            "login.example.com",
 					Username:        testUsername,
@@ -811,7 +915,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(nil, nil),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: true,
 							Banned:     false,
 							Username:   testUsername,
@@ -915,7 +1019,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(nil, nil),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: true,
 							Banned:     false,
 							Username:   testUsername,
@@ -1014,7 +1118,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(nil, fmt.Errorf("failed to get details")),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1110,7 +1214,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(nil),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1181,7 +1285,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return([]model.WebAuthnCredential{credential}, nil),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1277,7 +1381,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(fmt.Errorf("bad data")),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1326,7 +1430,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(nil, fmt.Errorf("failed to get creds")),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1372,7 +1476,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return(nil, fmt.Errorf("bad handle")),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1401,7 +1505,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				gomock.InOrder(
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1444,7 +1548,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				gomock.InOrder(
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1466,7 +1570,6 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 					},
 				}
 
-				mock.Ctx.Request.Header.Set("X-Original-URL", "123")
 				mock.Ctx.Request.Header.Set(fasthttp.HeaderXForwardedProto, "123")
 				require.NoError(t, mock.Ctx.SaveSession(us))
 			},
@@ -1479,7 +1582,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 
 				assert.Nil(t, us.WebAuthn)
 
-				AssertLogEntryMessageAndError(t, mock.LogEntryN(1), "Error occurred validating a WebAuthn passkey authentication challenge: error occurred provisioning the configuration", "failed to parse X-Original-URL header: parse \"123\": invalid URI for request")
+				AssertLogEntryMessageAndError(t, mock.LogEntryN(1), "Error occurred validating a WebAuthn passkey authentication challenge: error occurred provisioning the configuration", "failed to parse X-Forwarded Headers: parse \"123://login.example.com:8080/\": invalid URI for request")
 			},
 		},
 		{
@@ -1531,7 +1634,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 						Return([]model.WebAuthnCredential{credential}, nil),
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1562,7 +1665,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				gomock.InOrder(
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1605,7 +1708,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				gomock.InOrder(
 					mock.StorageMock.EXPECT().
 						AppendAuthenticationLog(gomock.Eq(mock.Ctx), gomock.Eq(model.AuthenticationAttempt{
-							Time:       mock.Ctx.Clock.Now(),
+							Time:       mock.Ctx.Providers.Clock.Now(),
 							Successful: false,
 							Banned:     false,
 							Username:   "",
@@ -1659,7 +1762,7 @@ func TestFirstFactorPasskeyPOST(t *testing.T) {
 				mock.Ctx.Request.SetBodyString(tc.have)
 			}
 
-			mock.Ctx.Request.Header.Set("X-Original-URL", "https://login.example.com:8080")
+			mock.Ctx.Request.Header.Set(fasthttp.HeaderXForwardedHost, "login.example.com:8080")
 
 			if tc.setup != nil {
 				tc.setup(t, mock)

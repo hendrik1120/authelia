@@ -1,3 +1,5 @@
+import * as React from 'react';
+
 import {
     Body,
     Container,
@@ -11,10 +13,11 @@ import {
     Tailwind,
     Button,
     Link,
-} from '@react-email/components';
-import * as React from 'react';
+} from 'react-email';
 
-interface IdentityVerificationOTCProps {
+import { Brand } from "../components/Brand";
+
+interface Props {
     title?: string;
     displayName?: string;
     domain?: string;
@@ -23,6 +26,7 @@ interface IdentityVerificationOTCProps {
     revocationLinkURL?: string;
     revocationLinkText?: string;
 	hidePreview?: boolean;
+    isPlainText?: boolean;
 }
 
 export const IdentityVerificationOTC = ({
@@ -34,16 +38,17 @@ export const IdentityVerificationOTC = ({
     revocationLinkURL,
     revocationLinkText,
 	hidePreview,
-}: IdentityVerificationOTCProps) => {
+	isPlainText,
+}: Props) => {
     return (
         <Html lang="en" dir="ltr">
+            <Tailwind>
             <Head />
-			{!hidePreview ? (
+			{hidePreview ? null : (
 				<Preview>
 					A one-time code has been generated for session elevation
 				</Preview>
-			) : null}
-            <Tailwind>
+			)}
                 <Body className="bg-white my-auto mx-auto font-sans px-2">
                     <Container className="border border-solid border-[#eaeaea] rounded my-[40px] mx-auto p-[20px] max-w-[465px]">
                         <Heading className="text-black text-[24px] font-normal text-center p-0 my-[30px] mx-0">
@@ -99,28 +104,42 @@ export const IdentityVerificationOTC = ({
                                 <li>Contact an Administrator</li>
                             </ol>
                         </Section>
-                        <Section className="text-center">
-                            <Button
-                                id="link-revoke"
-                                href={revocationLinkURL}
-                                className="bg-[#f50057] rounded text-white text-[12px] font-semibold no-underline text-center px-5 py-3"
-                            >
-                                {revocationLinkText}
-                            </Button>
-                        </Section>
-                        <Text className="text-black text-[14px] leading-[24px] text-center">
-                            To revoke the code click the above button or
-                            alternatively copy and paste this URL into your
-                            browser:{' '}
-                        </Text>
-                        <Text className="text-black text-[12px] leading-[24px] text-center">
-                            <Link
-                                href={revocationLinkURL}
-                                className="text-blue-600 no-underline"
-                            >
+                        {isPlainText ? (
+                            <Text className="text-black text-[14px] leading-[24px] text-center">
+                                To revoke the code, click the link below:
+                            </Text>
+                        ) : (
+                            <Section className="text-center">
+                                <Button
+                                    id="link-revoke"
+                                    href={revocationLinkURL}
+                                    className="bg-[#f50057] rounded text-white text-[12px] font-semibold no-underline text-center px-5 py-3"
+                                >
+                                    {revocationLinkText}
+                                </Button>
+                            </Section>
+                        )}
+                        {isPlainText ? (
+                            <Text className="text-black text-[12px] leading-[24px] text-center">
                                 {revocationLinkURL}
-                            </Link>
-                        </Text>
+                            </Text>
+                        ) : (
+                            <Text className="text-black text-[14px] leading-[24px] text-center">
+                                To revoke the code click the above button or
+                                alternatively copy and paste this URL into your
+                                browser:{' '}
+                            </Text>
+                        )}
+                        {!isPlainText && (
+                            <Text className="text-black text-[12px] leading-[24px] text-center">
+                                <Link
+                                    href={revocationLinkURL}
+                                    className="text-blue-600 no-underline"
+                                >
+                                    {revocationLinkURL}
+                                </Link>
+                            </Text>
+                        )}
                         <Hr className="border border-solid border-[#eaeaea] my-[26px] mx-0 w-full" />
                         <Text className="text-[#666666] text-[12px] leading-[24px] text-center">
                             This notification was intended for{' '}
@@ -133,16 +152,7 @@ export const IdentityVerificationOTC = ({
                             directions in this notification.
                         </Text>
                     </Container>
-                    <Text className="text-[#666666] text-[10px] leading-[24px] text-center text-muted">
-                        Powered by{' '}
-                        <Link
-                            href="https://www.authelia.com"
-                            target="_blank"
-                            className="text-[#666666]"
-                        >
-                            Authelia
-                        </Link>
-                    </Text>
+					<Brand />
                 </Body>
             </Tailwind>
         </Html>
@@ -157,6 +167,7 @@ IdentityVerificationOTC.PreviewProps = {
     revocationLinkURL: 'https://auth.example.com',
     revocationLinkText: 'Revoke',
     remoteIP: '127.0.0.1',
-} as IdentityVerificationOTCProps;
+    isPlainText: false,
+} as Props;
 
 export default IdentityVerificationOTC;

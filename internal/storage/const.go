@@ -63,6 +63,18 @@ const (
 )
 
 const (
+	keyTypeCryptographyEnc  = "enc"
+	keyTypeCryptographyHMAC = "hmac"
+
+	fmtNameKeyHMAC = "hmac_key_%s"
+	fmtNameKeyEnc  = "enc_key_%s"
+)
+
+const (
+	driverParameterFmtAppName = "authelia %s"
+)
+
+const (
 	// SchemaLatest represents the value expected for a "migrate to latest" migration. It's the maximum 32bit signed integer.
 	SchemaLatest = 2147483647
 )
@@ -71,6 +83,7 @@ type ctxKey int
 
 const (
 	ctxKeyTransaction ctxKey = iota
+	ctxKeyConnection
 )
 
 var (
@@ -79,6 +92,5 @@ var (
 )
 
 const (
-	na      = "N/A"
-	invalid = "invalid"
+	na = "N/A"
 )

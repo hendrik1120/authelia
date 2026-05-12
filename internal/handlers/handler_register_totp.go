@@ -20,7 +20,6 @@ func TOTPRegisterGET(ctx *middlewares.AutheliaCtx) {
 		userSession session.UserSession
 		err         error
 	)
-
 	if userSession, err = ctx.GetSession(); err != nil {
 		ctx.Logger.WithError(err).Errorf("Error occurred retrieving TOTP registration options: %s", errStrUserSessionData)
 
@@ -54,7 +53,6 @@ func TOTPRegisterPUT(ctx *middlewares.AutheliaCtx) {
 		bodyJSON    bodyRegisterTOTP
 		err         error
 	)
-
 	if userSession, err = ctx.GetSession(); err != nil {
 		ctx.Logger.WithError(err).Errorf("Error occurred generating a TOTP registration session: %s", errStrUserSessionData)
 
@@ -112,7 +110,7 @@ func TOTPRegisterPUT(ctx *middlewares.AutheliaCtx) {
 		Digits:    config.Digits,
 		Period:    config.Period,
 		Secret:    string(config.Secret),
-		Expires:   ctx.Clock.Now().Add(time.Minute * 10),
+		Expires:   ctx.GetClock().Now().Add(time.Minute * 10),
 	}
 
 	if err = ctx.SaveSession(userSession); err != nil {
@@ -146,7 +144,6 @@ func TOTPRegisterPOST(ctx *middlewares.AutheliaCtx) {
 		step        uint64
 		err         error
 	)
-
 	if userSession, err = ctx.GetSession(); err != nil {
 		ctx.Logger.WithError(err).Errorf("Error occurred validating a TOTP registration session: %s", errStrUserSessionData)
 
@@ -183,7 +180,7 @@ func TOTPRegisterPOST(ctx *middlewares.AutheliaCtx) {
 		return
 	}
 
-	if ctx.Clock.Now().After(userSession.TOTP.Expires) {
+	if ctx.GetClock().Now().After(userSession.TOTP.Expires) {
 		ctx.Logger.WithError(fmt.Errorf("the registration session is expired")).Errorf("Error occurred validating a TOTP registration session for user '%s': error occurred validating the session", userSession.Username)
 
 		ctx.SetStatusCode(fasthttp.StatusForbidden)
@@ -193,7 +190,7 @@ func TOTPRegisterPOST(ctx *middlewares.AutheliaCtx) {
 	}
 
 	config := model.TOTPConfiguration{
-		CreatedAt: ctx.Clock.Now(),
+		CreatedAt: ctx.GetClock().Now(),
 		Username:  userSession.Username,
 		Issuer:    userSession.TOTP.Issuer,
 		Algorithm: userSession.TOTP.Algorithm,
@@ -268,7 +265,6 @@ func TOTPRegisterDELETE(ctx *middlewares.AutheliaCtx) {
 		userSession session.UserSession
 		err         error
 	)
-
 	if userSession, err = ctx.GetSession(); err != nil {
 		ctx.Logger.WithError(err).Errorf("Error occurred deleting a TOTP registration session: %s", errStrUserSessionData)
 
@@ -313,7 +309,6 @@ func TOTPConfigurationDELETE(ctx *middlewares.AutheliaCtx) {
 		userSession session.UserSession
 		err         error
 	)
-
 	if userSession, err = ctx.GetSession(); err != nil {
 		ctx.Logger.WithError(err).Errorf("Error occurred deleting a TOTP configuration: %s", errStrUserSessionData)
 

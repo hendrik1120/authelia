@@ -24,7 +24,6 @@ func FirstFactorPasskeyGET(ctx *middlewares.AutheliaCtx) {
 		userSession session.UserSession
 		err         error
 	)
-
 	if userSession, err = ctx.GetSession(); err != nil {
 		ctx.Logger.WithError(err).Errorf(logFmtErrPasskeyAuthenticationChallengeGenerate, errStrUserSessionData)
 
@@ -107,7 +106,6 @@ func FirstFactorPasskeyPOST(ctx *middlewares.AutheliaCtx) {
 
 		response *protocol.ParsedCredentialAssertionData
 	)
-
 	if provider, err = ctx.GetSessionProvider(); err != nil {
 		ctx.Logger.WithError(err).Errorf(logFmtErrPasskeyAuthenticationChallengeValidate, errStrUserSessionData)
 
@@ -221,7 +219,13 @@ func FirstFactorPasskeyPOST(ctx *middlewares.AutheliaCtx) {
 
 	for _, credential := range user.Credentials {
 		if bytes.Equal(credential.KID.Bytes(), c.ID) {
-			credential.UpdateSignInInfo(w.Config, ctx.Clock.Now().UTC(), c.Authenticator)
+			credential.UpdateSignInInfo(w.Config, ctx.GetClock().Now().UTC(), c)
+
+			if !credential.Discoverable {
+				credential.Discoverable = true
+
+				ctx.Logger.WithFields(map[string]any{"kid": credential.KID.String(), "rpid": credential.RPID, "aaguid": credential.AAGUID.UUID.String(), "username": credential.Username, "description": credential.Description}).Debug("WebAuthn Credential Passively Upgraded to a Passkey")
+			}
 
 			ok = true
 
@@ -304,7 +308,7 @@ func FirstFactorPasskeyPOST(ctx *middlewares.AutheliaCtx) {
 	doMarkAuthenticationAttempt(ctx, true, regulation.NewBan(regulation.BanTypeNone, details.Username, nil), regulation.AuthTypePasskey, nil)
 
 	if ctx.Configuration.AuthenticationBackend.RefreshInterval.Update() {
-		userSession.RefreshTTL = ctx.Clock.Now().Add(ctx.Configuration.AuthenticationBackend.RefreshInterval.Value())
+		userSession.RefreshTTL = ctx.GetClock().Now().Add(ctx.Configuration.AuthenticationBackend.RefreshInterval.Value())
 	}
 
 	// Check if bodyJSON.KeepMeLoggedIn can be deref'd and derive the value based on the configuration and JSON data.
@@ -329,19 +333,19 @@ func FirstFactorPasskeyPOST(ctx *middlewares.AutheliaCtx) {
 	}).Debug("Passkey Login")
 
 	userSession.SetOneFactorPasskey(
-		ctx.Clock.Now(), details,
+		ctx.GetClock().Now(), details,
 		keepMeLoggedIn,
-		response.ParsedPublicKeyCredential.AuthenticatorAttachment == protocol.CrossPlatform,
+		response.AuthenticatorAttachment == protocol.CrossPlatform,
 		response.Response.AuthenticatorData.Flags.HasUserPresent(),
 		response.Response.AuthenticatorData.Flags.HasUserVerified(),
 	)
 
 	if ctx.Configuration.AuthenticationBackend.RefreshInterval.Update() {
-		userSession.RefreshTTL = ctx.Clock.Now().Add(ctx.Configuration.AuthenticationBackend.RefreshInterval.Value())
+		userSession.RefreshTTL = ctx.GetClock().Now().Add(ctx.Configuration.AuthenticationBackend.RefreshInterval.Value())
 	}
 
-	if bodyJSON.Workflow == workflowOpenIDConnect {
-		handleOIDCWorkflowResponse(ctx, &userSession, bodyJSON.WorkflowID)
+	if len(bodyJSON.Flow) > 0 {
+		handleFlowResponse(ctx, &userSession, bodyJSON.FlowID, bodyJSON.Flow, bodyJSON.SubFlow, bodyJSON.UserCode)
 	} else {
 		HandlePasskeyResponse(ctx, bodyJSON.TargetURL, bodyJSON.RequestMethod, userSession.Username, userSession.Groups, userSession.AuthenticationLevel(ctx.Configuration.WebAuthn.EnablePasskey2FA) == authentication.TwoFactor)
 	}

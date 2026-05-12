@@ -54,7 +54,7 @@ func cmdBootstrapRun(_ *cobra.Command, _ []string) {
 
 	createTemporaryDirectory()
 
-	if os.Getenv("CI") != "true" {
+	if os.Getenv("CI") != stringTrue {
 		createPNPMDirectory()
 		pnpmInstall()
 	}
@@ -116,6 +116,9 @@ var hostEntries = []HostEntry{
 	{Domain: "redis-sentinel-1.example.com", IP: "192.168.240.121"},
 	{Domain: "redis-sentinel-2.example.com", IP: "192.168.240.122"},
 
+	// For PAM suite.
+	{Domain: "ssh.example.com", IP: "192.168.240.130"},
+
 	// For multi cookie domain tests.
 	{Domain: "login.example2.com", IP: "192.168.240.100"},
 	{Domain: "admin.example2.com", IP: "192.168.240.100"},
@@ -143,8 +146,8 @@ var hostEntries = []HostEntry{
 
 func runCommand(cmd string, args ...string) {
 	command := utils.CommandWithStdout(cmd, args...)
-	err := command.Run()
 
+	err := command.Run()
 	if err != nil {
 		panic(err)
 	}
@@ -168,7 +171,6 @@ func checkCommandExist(cmd string, resolutionHint string) {
 
 func createTemporaryDirectory() {
 	err := os.MkdirAll("/tmp/authelia", 0755)
-
 	if err != nil {
 		panic(err)
 	}
@@ -178,11 +180,10 @@ func createPNPMDirectory() {
 	if _, ok := os.LookupEnv("PNPM_HOME"); !ok {
 		home := os.Getenv("HOME")
 		if home != "" {
-			if _, err := os.Stat(home + pathPNPMStore); os.IsNotExist(err) {
+			if _, err := os.Stat(home + pathPNPMStore); os.IsNotExist(err) { //nolint:gosec // TODO: Run this line through taint analysis.
 				bootstrapPrintln("Creating ", home+pathPNPMStore)
 
-				err = os.MkdirAll(home+pathPNPMStore, 0755)
-				if err != nil {
+				if err = os.MkdirAll(home+pathPNPMStore, 0755); err != nil { //nolint:gosec // TODO: Run this line through taint analysis.
 					panic(err)
 				}
 			}
@@ -208,7 +209,7 @@ func pnpmInstall() {
 }
 
 func bootstrapPrintln(args ...any) {
-	a := make([]any, 0)
+	a := make([]any, 0, 1+len(args))
 	a = append(a, "[BOOTSTRAP]")
 	a = append(a, args...)
 	fmt.Println(a...)
@@ -220,7 +221,6 @@ func shell(cmd string) {
 
 func prepareHostsFile() {
 	contentBytes, err := readHostsFile()
-
 	if err != nil {
 		panic(err)
 	}
@@ -294,8 +294,8 @@ func readHostsFile() ([]byte, error) {
 
 func readVersion(cmd string, args ...string) {
 	command := exec.Command(cmd, args...)
-	b, err := command.Output()
 
+	b, err := command.Output()
 	if err != nil {
 		panic(err)
 	}

@@ -90,6 +90,7 @@ func TestShouldNotPanicOnNilDB(t *testing.T) {
 	}
 
 	assert.NoError(t, provider.StartupCheck())
+	assert.NoError(t, provider.Close())
 }
 
 func TestShouldHandleBadConfig(t *testing.T) {
@@ -124,7 +125,7 @@ func TestShouldReloadDatabase(t *testing.T) {
 				provider.timeoutReload = time.Now().Add(time.Minute)
 			},
 			false,
-			"",
+			"watcher on cooldown",
 		},
 		{
 			"ShouldReloadWithoutError",
@@ -148,7 +149,7 @@ func TestShouldReloadDatabase(t *testing.T) {
 				provider.database = NewFileUserDatabase(p, provider.config.Search.Email, provider.config.Search.CaseInsensitive, nil)
 			},
 			false,
-			"",
+			"error reading the authentication database: no file content",
 		},
 	}
 
@@ -403,6 +404,151 @@ func TestShouldErrOnUpdatePasswordNoUser(t *testing.T) {
 	})
 }
 
+func TestShouldChangePassword(t *testing.T) {
+	testCases := []struct {
+		name        string
+		username    string
+		oldPassword string
+		newPassword string
+		err         string
+	}{
+		{
+			"ShouldChangePasswordSuccessfully",
+			"john",
+			"password",
+			"newpassword",
+			"",
+		},
+		{
+			"ShouldErrUserNotFound",
+			"nouser",
+			"password",
+			"newpassword",
+			"user not found",
+		},
+		{
+			"ShouldErrDisabledUser",
+			"dis",
+			"password",
+			"newpassword",
+			"user not found",
+		},
+		{
+			"ShouldErrEmptyNewPassword",
+			"john",
+			"password",
+			"",
+			"your supplied password does not meet the password policy requirements",
+		},
+		{
+			"ShouldErrWhitespaceNewPassword",
+			"john",
+			"password",
+			"   ",
+			"your supplied password does not meet the password policy requirements",
+		},
+		{
+			"ShouldErrSamePassword",
+			"john",
+			"password",
+			"password",
+			"your supplied password does not meet the password policy requirements",
+		},
+		{
+			"ShouldErrIncorrectOldPassword",
+			"john",
+			"wrong_password",
+			"newpassword",
+			"incorrect password",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			WithDatabase(t, UserDatabaseContent, func(path string) {
+				config := DefaultFileAuthenticationBackendConfiguration
+				config.Path = path
+
+				provider := NewFileUserProvider(&config)
+
+				assert.NoError(t, provider.StartupCheck())
+
+				err := provider.ChangePassword(tc.username, tc.oldPassword, tc.newPassword)
+
+				if tc.err == "" {
+					assert.NoError(t, err)
+
+					// Verify the new password works by resetting the provider.
+					provider = NewFileUserProvider(&config)
+
+					assert.NoError(t, provider.StartupCheck())
+
+					ok, err := provider.CheckUserPassword(tc.username, tc.newPassword)
+					assert.NoError(t, err)
+					assert.True(t, ok)
+				} else {
+					assert.ErrorContains(t, err, tc.err)
+				}
+			})
+		})
+	}
+}
+
+func TestShouldChangePasswordHashError(t *testing.T) {
+	WithDatabase(t, UserDatabaseContent, func(path string) {
+		config := DefaultFileAuthenticationBackendConfiguration
+		config.Path = path
+
+		provider := NewFileUserProvider(&config)
+
+		assert.NoError(t, provider.StartupCheck())
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mock := NewMockHash(ctrl)
+		provider.hash = mock
+
+		mock.EXPECT().Hash("newpassword").Return(nil, fmt.Errorf("failed to mock hash"))
+
+		err := provider.ChangePassword("john", "password", "newpassword")
+		assert.ErrorContains(t, err, "operation failed")
+	})
+}
+
+func TestShouldChangePasswordSaveError(t *testing.T) {
+	WithDatabase(t, UserDatabaseContent, func(path string) {
+		db := NewFileUserDatabase(path, false, false, nil)
+		assert.NoError(t, db.Load())
+
+		config := DefaultFileAuthenticationBackendConfiguration
+		config.Path = path
+
+		provider := NewFileUserProvider(&config)
+
+		assert.NoError(t, provider.StartupCheck())
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mock := NewMockFileUserDatabase(ctrl)
+
+		provider.database = mock
+
+		details, _ := db.GetUserDetails("john")
+
+		gomock.InOrder(
+			mock.EXPECT().GetUserDetails("john").Return(details, nil),
+			mock.EXPECT().GetUserDetails("john").Return(details, nil),
+			mock.EXPECT().SetUserDetails("john", gomock.Any()),
+			mock.EXPECT().Save().Return(fmt.Errorf("failed to mock save")),
+		)
+
+		err := provider.ChangePassword("john", "password", "newpassword")
+		assert.ErrorContains(t, err, "operation failed")
+	})
+}
+
 func TestShouldRaiseWhenLoadingMalformedDatabaseForFirstTime(t *testing.T) {
 	WithDatabase(t, MalformedUserDatabaseContent, func(path string) {
 		config := DefaultFileAuthenticationBackendConfiguration
@@ -410,7 +556,7 @@ func TestShouldRaiseWhenLoadingMalformedDatabaseForFirstTime(t *testing.T) {
 
 		provider := NewFileUserProvider(&config)
 
-		assert.EqualError(t, provider.StartupCheck(), "error reading the authentication database: could not parse the YAML database: yaml: line 4: mapping values are not allowed in this context")
+		assert.EqualError(t, provider.StartupCheck(), "error reading the authentication database: could not parse the YAML database: yaml: line 4, column 6: mapping values are not allowed in this context")
 	})
 }
 
@@ -502,7 +648,7 @@ func TestShouldNotAllowLoginOfDisabledUsers(t *testing.T) {
 }
 
 func TestShouldErrorOnInvalidCaseSensitiveFile(t *testing.T) {
-	WithDatabase(t, UserDatabaseContentInvalidSearchCaseInsenstive, func(path string) {
+	WithDatabase(t, UserDatabaseContentInvalidSearchCaseInsensitive, func(path string) {
 		config := DefaultFileAuthenticationBackendConfiguration
 		config.Path = path
 		config.Search.Email = false
@@ -524,7 +670,7 @@ func TestShouldErrorOnDuplicateEmail(t *testing.T) {
 		provider := NewFileUserProvider(&config)
 
 		err := provider.StartupCheck()
-		assert.Regexp(t, regexp.MustCompile(`^error loading authentication database: email 'john.doe@authelia.com' is configured for for more than one user \(users are '(harry|john)', '(harry|john)'\) which isn't allowed when email search is enabled$`), err.Error())
+		assert.Regexp(t, regexp.MustCompile(`^error loading authentication database: email 'john.doe@authelia.com' is configured for more than one user \(users are '(harry|john)', '(harry|john)'\) which isn't allowed when email search is enabled$`), err.Error())
 	})
 }
 
@@ -637,10 +783,10 @@ func TestNewFileCryptoHashFromConfig(t *testing.T) {
 			"",
 		},
 		{
-			"ShouldCreateSCrypt",
+			"ShouldCreateScrypt",
 			schema.AuthenticationBackendFilePassword{
 				Algorithm: "scrypt",
-				SCrypt: schema.AuthenticationBackendFilePasswordSCrypt{
+				Scrypt: schema.AuthenticationBackendFilePasswordScrypt{
 					Iterations:  12,
 					SaltLength:  16,
 					Parallelism: 1,
@@ -652,10 +798,10 @@ func TestNewFileCryptoHashFromConfig(t *testing.T) {
 			"",
 		},
 		{
-			"ShouldCreateBCrypt",
+			"ShouldCreateBcrypt",
 			schema.AuthenticationBackendFilePassword{
 				Algorithm: "bcrypt",
-				BCrypt: schema.AuthenticationBackendFilePasswordBCrypt{
+				Bcrypt: schema.AuthenticationBackendFilePasswordBcrypt{
 					Variant: "standard",
 					Cost:    12,
 				},
@@ -664,7 +810,7 @@ func TestNewFileCryptoHashFromConfig(t *testing.T) {
 			"",
 		},
 		{
-			"ShouldFailToCreateSCryptInvalidParameter",
+			"ShouldFailToCreateScryptInvalidParameter",
 			schema.AuthenticationBackendFilePassword{
 				Algorithm: "scrypt",
 			},
@@ -841,7 +987,7 @@ users:
       example: '123'
 `)
 
-var UserDatabaseContentInvalidSearchCaseInsenstive = []byte(`
+var UserDatabaseContentInvalidSearchCaseInsensitive = []byte(`
 users:
   john:
     displayname: "John Doe"
@@ -1015,6 +1161,8 @@ users:
 `)
 
 func WithDatabase(t *testing.T, content []byte, f func(path string)) {
+	t.Helper()
+
 	dir := t.TempDir()
 
 	db, err := os.CreateTemp(dir, "users_database.*.yml")

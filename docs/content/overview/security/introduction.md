@@ -2,7 +2,7 @@
 title: "Security"
 description: "An overview introduction into Authelia's security features."
 summary: "An overview introduction into Authelia's security features."
-date: 2022-06-15T17:51:47+10:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 410
@@ -36,3 +36,5 @@ diligent administrators simply via the act of disclosing the security issue.
 ## Policy
 
 Please view our [security policy](../../policies/security.md) for more information.
+
+[coordinated vulnerability disclosure]: https://en.wikipedia.org/wiki/Coordinated_vulnerability_disclosure

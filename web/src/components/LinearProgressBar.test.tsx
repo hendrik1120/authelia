@@ -1,7 +1,4 @@
-import React from "react";
-
-import { createTheme } from "@mui/material/styles";
-import { ThemeProvider } from "@mui/styles";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { render } from "@testing-library/react";
 
 import LinearProgressBar from "@components/LinearProgressBar";
@@ -14,7 +11,7 @@ it("renders without crashing", () => {
     );
 });
 
-it("renders adjusted height without crashing", () => {
+it("renders with adjusted height", () => {
     render(
         <ThemeProvider theme={createTheme()}>
             <LinearProgressBar value={40} height={2} />

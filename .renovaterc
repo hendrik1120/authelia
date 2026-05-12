@@ -1,17 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
     ":semanticCommitTypeAll(build)",
     ":separatePatchReleases",
     "workarounds:doNotUpgradeFromAlpineStableToEdge"
   ],
-  "ignoreDeps": [
-  	"vite-plugin-checker"
-  ],
-  "ignorePaths": [
-  	"docs/**"
-  ],
+  "branchPrefix": "renovate-",
+  "rebaseWhen": "conflicted",
   "ignorePresets": [
     ":prHourlyLimit2",
     ":semanticPrefixFixDepsChoreOthers",
@@ -20,35 +16,32 @@
   "enabledManagers": [
     "docker-compose",
     "dockerfile",
+    "github-actions",
     "gomod",
     "kubernetes",
     "npm"
   ],
   "kubernetes": {
-    "fileMatch": ["kube/.+\\.yml$"]
+    "managerFilePatterns": [
+      "/kube/.+\\.yml$/"
+    ]
   },
   "labels": [
     "dependencies"
   ],
   "packageRules": [
     {
-      "matchUpdateTypes": ["digest", "minor", "patch"],
-      "automerge": true,
-      "automergeType": "pr",
-      "platformAutomerge": true
-    },
-    {
-      "datasources": [
+      "matchDatasources": [
         "docker"
       ],
       "matchPackageNames": "traefik",
       "matchFileNames": [
-      	"internal/suites/example/compose/traefik/compose.v2.yml"
+        "internal/suites/example/compose/traefik/compose.v2.yml"
       ],
       "allowedVersions": "<3.0.0"
     },
     {
-      "datasources": [
+      "matchDatasources": [
         "docker"
       ],
       "addLabels": [
@@ -56,7 +49,15 @@
       ]
     },
     {
-      "datasources": [
+      "matchManagers": [
+        "github-actions"
+      ],
+      "addLabels": [
+        "github_actions"
+      ]
+    },
+    {
+      "matchDatasources": [
         "go"
       ],
       "addLabels": [
@@ -64,7 +65,7 @@
       ]
     },
     {
-      "datasources": [
+      "matchDatasources": [
         "kubernetes"
       ],
       "addLabels": [
@@ -72,7 +73,7 @@
       ]
     },
     {
-      "datasources": [
+      "matchDatasources": [
         "npm"
       ],
       "addLabels": [
@@ -81,7 +82,6 @@
     }
   ],
   "postUpdateOptions": [
-      "gomodTidy",
-      "gomodNoMassage"
+    "gomodTidy"
   ]
 }

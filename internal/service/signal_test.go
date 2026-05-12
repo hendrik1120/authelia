@@ -64,7 +64,7 @@ func newMockServiceCtx() *mockServiceCtx {
 		ctx:       context.Background(),
 		config:    config,
 		logger:    logrus.NewEntry(logger),
-		providers: middlewares.Providers{},
+		providers: middlewares.NewProvidersBasic(),
 	}
 }
 
@@ -102,6 +102,8 @@ func TestSignalService_Run(t *testing.T) {
 				signals: []os.Signal{syscall.SIGHUP},
 				action:  action,
 				log:     logger.WithFields(map[string]any{logFieldService: serviceTypeSignal, serviceTypeSignal: "log-reload"}),
+				notify:  make(chan os.Signal, 1),
+				quit:    make(chan struct{}),
 			}
 
 			errChan := make(chan error, 1)
@@ -128,6 +130,9 @@ func TestSignalService_Run(t *testing.T) {
 			}
 
 			time.Sleep(100 * time.Millisecond)
+
+			assert.NotNil(t, service.log)
+			assert.NotNil(t, service.Log())
 
 			service.Shutdown()
 
@@ -203,7 +208,7 @@ func TestLogReopenFiles(t *testing.T) {
 		ctx:       context.Background(),
 		config:    config,
 		logger:    logrus.NewEntry(logging.Logger()),
-		providers: middlewares.Providers{},
+		providers: middlewares.NewProvidersBasic(),
 	}
 
 	service, _ := ProvisionLoggingSignal(ctx)
@@ -248,9 +253,12 @@ func TestSignalService_Shutdown(t *testing.T) {
 		signals: []os.Signal{syscall.SIGHUP},
 		action:  action,
 		log:     logger.WithFields(map[string]any{logFieldService: serviceTypeSignal, serviceTypeSignal: "test"}),
+		notify:  make(chan os.Signal, 1),
+		quit:    make(chan struct{}),
 	}
 
 	done := make(chan struct{})
+
 	go func() {
 		err := service.Run()
 		assert.NoError(t, err)

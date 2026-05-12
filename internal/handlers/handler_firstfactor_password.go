@@ -29,16 +29,17 @@ func FirstFactorPasswordPOST(delayFunc middlewares.TimingAttackDelayFunc) middle
 			details *authentication.UserDetails
 			err     error
 		)
-
 		if err = ctx.ParseBody(&bodyJSON); err != nil {
-			ctx.Logger.WithError(err).Errorf(logFmtErrParseRequestBody, regulation.AuthType1FA)
-
 			respondUnauthorized(ctx, messageAuthenticationFailed)
+
+			ctx.Logger.WithError(err).Errorf(logFmtErrParseRequestBody, regulation.AuthType1FA)
 
 			return
 		}
 
 		if details, err = ctx.Providers.UserProvider.GetDetails(bodyJSON.Username); err != nil || details == nil {
+			doMarkAuthenticationAttempt(ctx, false, regulation.NewBan(regulation.BanTypeNone, "", nil), regulation.AuthType1FA, err)
+
 			ctx.Logger.WithError(err).Errorf("Error occurred getting details for user with username input '%s' which usually indicates they do not exist", bodyJSON.Username)
 
 			respondUnauthorized(ctx, messageAuthenticationFailed)
@@ -64,7 +65,11 @@ func FirstFactorPasswordPOST(delayFunc middlewares.TimingAttackDelayFunc) middle
 
 		userPasswordOk, err := ctx.Providers.UserProvider.CheckUserPassword(details.Username, bodyJSON.Password)
 		if err != nil {
-			doMarkAuthenticationAttempt(ctx, false, regulation.NewBan(regulation.BanTypeNone, details.Username, nil), regulation.AuthType1FA, err)
+			if isRegulatorSkippedErr(err) {
+				ctx.Logger.WithError(err).Errorf("Unsuccessful %s authentication attempt by user '%s'", regulation.AuthType1FA, details.Username)
+			} else {
+				doMarkAuthenticationAttempt(ctx, false, regulation.NewBan(regulation.BanTypeNone, details.Username, nil), regulation.AuthType1FA, err)
+			}
 
 			respondUnauthorized(ctx, messageAuthenticationFailed)
 
@@ -132,10 +137,10 @@ func FirstFactorPasswordPOST(delayFunc middlewares.TimingAttackDelayFunc) middle
 
 		ctx.Logger.Tracef(logFmtTraceProfileDetails, details.Username, details.Groups, details.Emails)
 
-		userSession.SetOneFactorPassword(ctx.Clock.Now(), details, keepMeLoggedIn)
+		userSession.SetOneFactorPassword(ctx.GetClock().Now(), details, keepMeLoggedIn)
 
 		if ctx.Configuration.AuthenticationBackend.RefreshInterval.Update() {
-			userSession.RefreshTTL = ctx.Clock.Now().Add(ctx.Configuration.AuthenticationBackend.RefreshInterval.Value())
+			userSession.RefreshTTL = ctx.GetClock().Now().Add(ctx.Configuration.AuthenticationBackend.RefreshInterval.Value())
 		}
 
 		if err = provider.SaveSession(ctx.RequestCtx, userSession); err != nil {
@@ -148,8 +153,8 @@ func FirstFactorPasswordPOST(delayFunc middlewares.TimingAttackDelayFunc) middle
 
 		successful = true
 
-		if bodyJSON.Workflow == workflowOpenIDConnect {
-			handleOIDCWorkflowResponse(ctx, &userSession, bodyJSON.WorkflowID)
+		if len(bodyJSON.Flow) > 0 {
+			handleFlowResponse(ctx, &userSession, bodyJSON.FlowID, bodyJSON.Flow, bodyJSON.SubFlow, bodyJSON.UserCode)
 		} else {
 			Handle1FAResponse(ctx, bodyJSON.TargetURL, bodyJSON.RequestMethod, userSession.Username, userSession.Groups)
 		}
@@ -171,7 +176,6 @@ func FirstFactorReauthenticatePOST(delayFunc middlewares.TimingAttackDelayFunc) 
 		bodyJSON := bodyFirstFactorReauthenticateRequest{}
 
 		var err error
-
 		if err = ctx.ParseBody(&bodyJSON); err != nil {
 			ctx.Logger.WithError(err).Errorf(logFmtErrParseRequestBody, regulation.AuthType1FA)
 
@@ -264,10 +268,10 @@ func FirstFactorReauthenticatePOST(delayFunc middlewares.TimingAttackDelayFunc) 
 
 		ctx.Logger.Tracef(logFmtTraceProfileDetails, userSession.Username, userDetails.Groups, userDetails.Emails)
 
-		userSession.SetOneFactorReauthenticate(ctx.Clock.Now(), userDetails)
+		userSession.SetOneFactorReauthenticate(ctx.GetClock().Now(), userDetails)
 
 		if ctx.Configuration.AuthenticationBackend.RefreshInterval.Update() {
-			userSession.RefreshTTL = ctx.Clock.Now().Add(ctx.Configuration.AuthenticationBackend.RefreshInterval.Value())
+			userSession.RefreshTTL = ctx.GetClock().Now().Add(ctx.Configuration.AuthenticationBackend.RefreshInterval.Value())
 		}
 
 		if err = ctx.SaveSession(userSession); err != nil {
@@ -280,8 +284,8 @@ func FirstFactorReauthenticatePOST(delayFunc middlewares.TimingAttackDelayFunc) 
 
 		successful = true
 
-		if bodyJSON.Workflow == workflowOpenIDConnect {
-			handleOIDCWorkflowResponse(ctx, &userSession, bodyJSON.WorkflowID)
+		if len(bodyJSON.Flow) > 0 {
+			handleFlowResponse(ctx, &userSession, bodyJSON.FlowID, bodyJSON.Flow, bodyJSON.SubFlow, bodyJSON.UserCode)
 		} else {
 			Handle1FAResponse(ctx, bodyJSON.TargetURL, bodyJSON.RequestMethod, userSession.Username, userSession.Groups)
 		}

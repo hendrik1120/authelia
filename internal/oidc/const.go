@@ -1,7 +1,10 @@
 package oidc
 
 import (
+	"net/http"
 	"time"
+
+	oauthelia2 "authelia.com/provider/oauth2"
 )
 
 // Scope strings.
@@ -16,6 +19,15 @@ const (
 	ScopeGroups        = "groups"
 
 	ScopeAutheliaBearerAuthz = "authelia.bearer.authz"
+	ScopeAutheliaPAM         = "authelia.pam"
+)
+
+const (
+	fmtAutheliaOpaqueOAuth2Token = "authelia_%s_" //nolint:gosec
+)
+
+const (
+	fmtValueOAuth2AccessToken = "at"
 )
 
 // Registered Claim strings. See https://www.iana.org/assignments/jwt/jwt.xhtml.
@@ -31,7 +43,7 @@ const (
 	ClaimExpirationTime                      = "exp"
 	ClaimAuthenticationTime                  = "auth_time"
 	ClaimIssuer                              = valueIss
-	ClaimNonce                               = "nonce"
+	ClaimNonce                               = valueNonce
 	ClaimAudience                            = "aud"
 	ClaimGroups                              = "groups"
 	ClaimAuthorizedParty                     = "azp"
@@ -154,6 +166,7 @@ const (
 )
 
 const (
+	EncryptionAlgNone             = "none"
 	EncryptionAlgRSA15            = "RSA1_5"
 	EncryptionAlgRSAOAEP          = "RSA-OAEP"
 	EncryptionAlgRSAOAEP256       = "RSA-OAEP-256"
@@ -219,10 +232,12 @@ const (
 	FormParameterResponseMode = "response_mode"
 	FormParameterResponseType = "response_type"
 	FormParameterScope        = valueScope
-	FormParameterIssuer       = valueIss
 	FormParameterPrompt       = "prompt"
 	FormParameterMaximumAge   = "max_age"
 	FormParameterClaims       = "claims"
+	FormParameterUserCode     = "user_code"
+	FormParameterFlowID       = "flow_id"
+	FormParameterNonce        = valueNonce
 )
 
 const (
@@ -256,6 +271,7 @@ const (
 
 // Endpoints.
 const (
+	EndpointConsent                    = "consent"
 	EndpointAuthorization              = "authorization"
 	EndpointDeviceAuthorization        = "device-authorization"
 	EndpointToken                      = "token"
@@ -267,11 +283,11 @@ const (
 
 // Paths.
 const (
-	EndpointPathConsent         = "/consent/openid"
-	EndpointPathConsentDecision = EndpointPathConsent + "/decision"
-	EndpointPathConsentLogin    = EndpointPathConsent + "/login"
+	FrontendEndpointPathConsentCompletion = "/consent/completion"
 
-	EndpointPathRFC8628UserVerificationURL = EndpointPathConsent + "/" + EndpointDeviceAuthorization
+	FrontendEndpointPathConsent                    = "/consent/openid"
+	FrontendEndpointPathConsentDecision            = FrontendEndpointPathConsent + "/decision"
+	FrontendEndpointPathConsentDeviceAuthorization = FrontendEndpointPathConsent + "/" + EndpointDeviceAuthorization
 
 	EndpointPathWellKnownOpenIDConfiguration      = "/.well-known/openid-configuration"
 	EndpointPathWellKnownOAuthAuthorizationServer = "/.well-known/oauth-authorization-server"
@@ -279,6 +295,7 @@ const (
 
 	EndpointPathRoot = "/api/oidc"
 
+	EndpointPathConsent                    = EndpointPathRoot + "/" + EndpointConsent
 	EndpointPathAuthorization              = EndpointPathRoot + "/" + EndpointAuthorization
 	EndpointPathToken                      = EndpointPathRoot + "/" + EndpointToken
 	EndpointPathUserinfo                   = EndpointPathRoot + "/" + EndpointUserinfo
@@ -404,6 +421,7 @@ const (
 	valueNone          = "none"
 	valueRefreshToken  = "refresh_token"
 	valueIss           = "iss"
+	valueNonce         = "nonce"
 )
 
 const (
@@ -415,4 +433,15 @@ const (
 	fieldRFC6750ErrorDescription = "error_description"
 	fieldRFC6750Realm            = "realm"
 	fieldRFC6750Scope            = valueScope
+)
+
+const ErrTextEffectiveIssuer = "error occurred determining the effective issuer for the given request"
+
+var (
+	ErrEffectiveIssuer = &oauthelia2.RFC6749Error{
+		ErrorField:       "server_error",
+		DescriptionField: "The authorization server encountered an unexpected condition that prevented it from fulfilling the request.",
+		HintField:        "Error occurred determining the effective issuer for this request. Either the server has not been setup to handle these requests, or a failure occurred looking up details for this request.",
+		CodeField:        http.StatusInternalServerError,
+	}
 )

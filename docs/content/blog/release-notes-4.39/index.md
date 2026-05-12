@@ -9,7 +9,7 @@ categories: ["News", "Release Notes"]
 tags: ["releases", "release-notes"]
 contributors: ["James Elliott", "Brynn Crowley"]
 pinned: false
-homepage: false
+homepage: true
 seo:
   title: "" # custom title (optional)
   description: "" # custom description (recommended)
@@ -56,6 +56,10 @@ This blog article is rather large so this serves as an index for the section hea
   - [Password Change](#password-change)
   - [Log File Reopening](#log-file-reopening)
   - [Basic Authorization Caching](#basic-authorization-caching)
+  - [LDAP Connection Pooling](#ldap-connection-pooling)
+  - [PostgreSQL Failover](#postgresql-failover)
+  - [SQL Peer Authentication](#sql-peer-authentication)
+  - [Systemd Unit Improvements](#systemd-unit-improvements)
 
 ---
 
@@ -65,11 +69,16 @@ A number of exiting features have been added to our WebAuthn implementation.
 
 ### Passkeys and Passwordless Authentication
 
-This release adds support for Passkeys including the ability to perform Passwordless Authentication with them. The
-feature has been implemented to count as non-MFA, and by default users will have to enter their password to perform
-full MFA.
+This release adds support for Passkeys including the ability to perform Passwordless Authentication with them.
 
-A configuration option exists to change this behaviour. It should be noted we have future plans
+{{< figure src="passkeys.png" caption="Passkeys Portal View" alt="Passkeys Portal View" sizes="300ox" >}}
+
+The feature has been implemented to count as non-MFA at the present time, and by default users will have to enter their
+password to perform full MFA.
+
+{{< figure src="password_2fa.png" caption="Passkey Login MFA Password Prompt" alt="Passkey Login MFA Password Prompt" sizes="50dvh" >}}
+
+A configuration option exists to change this behavior. It should be noted we have future plans
 to make this experience more customizable which will remove this configuration option in favor of one that uses
 [Authentication Method Reference](#authentication-method-reference).
 
@@ -137,6 +146,8 @@ the client.
 
 See the [Custom Claims](../../integration/openid-connect/openid-connect-1.0-claims.md#custom-claims) for a fairly
 comprehensive example.
+
+{{< figure src="consent_custom_claims.png" caption="An example of the OpenID Connect 1.0 Consent View with Custom Claims" alt="OpenID Connect 1.0 Consent View" sizes="50dvh" >}}
 
 ### JSON Web Encryption
 
@@ -292,6 +303,8 @@ for more information.
 
 In this release users will notice a brand-new language preference setting from the frontend.
 
+{{< figure src="language_picker_small.png" caption="An example of the Language Picker" alt="Language Picker" sizes="50dvh" >}}
+
 ### Log File Reopening
 
 Sending the `SIGHUP` signal in this release will instruct Authelia to reopen any log files. This facilitates the ability
@@ -359,3 +372,10 @@ directories and ensure the permissions in a way that adheres to principle of lea
 
 Should you find the file permissions either too restrictive or not restrictive enough you can override the tmpfiles.d
 configuration by looking at the [Systemd Reference Guide](../../reference/guides/systemd.md).
+
+
+### OLED Theme
+
+{{< figure src="oled.png" caption="Login Portal OLED Theme" alt="OLED Theme" sizes="50dvh" >}}
+
+A new theme has been added optimized for OLED displays.

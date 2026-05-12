@@ -1,8 +1,7 @@
-import React, { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 
-import { Box, Container, Theme } from "@mui/material";
-import Grid from "@mui/material/Grid2";
-import makeStyles from "@mui/styles/makeStyles";
+import { Box, Container } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { useTranslation } from "react-i18next";
 
 import UserSvg from "@assets/images/user.svg?react";
@@ -16,23 +15,29 @@ import { getLogoOverride } from "@utils/Configuration";
 export interface Props {
     id?: string;
     children?: ReactNode;
-    title?: string | null;
+    title?: null | string;
     userInfo?: UserInfo;
 }
 
 const MinimalLayout = function (props: Props) {
     const { t: translate } = useTranslation();
 
-    const styles = useStyles();
-
     const logo = getLogoOverride() ? (
-        <img src="./static/media/logo.png" alt="Logo" className={styles.icon} />
+        <Box
+            component={"img"}
+            src="./static/media/logo.png"
+            alt="Logo"
+            sx={{ fill: (theme) => theme.custom.icon, margin: (theme) => theme.spacing(), width: "64px" }}
+        />
     ) : (
-        <UserSvg className={styles.icon} />
+        <Box
+            component={UserSvg}
+            sx={{ fill: (theme) => theme.custom.icon, margin: (theme) => theme.spacing(), width: "64px" }}
+        />
     );
 
     useEffect(() => {
-        document.title = translate("Login - {{authelia}}", { authelia: atob(String.fromCharCode(...EncodedName)) });
+        document.title = translate("Login - {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) });
     }, [translate]);
 
     return (
@@ -40,21 +45,28 @@ const MinimalLayout = function (props: Props) {
             <AppBarLoginPortal userInfo={props.userInfo} />
             <Grid
                 id={props.id}
-                className={styles.root}
                 container
                 spacing={0}
-                alignItems={"center"}
-                justifyContent={"center"}
+                alignItems="center"
+                justifyContent="center"
+                sx={{ minHeight: "90vh", textAlign: "center" }}
             >
-                <Container maxWidth={"xs"} className={styles.rootContainer}>
+                <Container maxWidth="xs" sx={{ paddingLeft: "32px", paddingRight: "32px" }}>
                     <Grid container>
                         <Grid size={{ xs: 12 }}>{logo}</Grid>
                         {props.title ? (
                             <Grid size={{ xs: 12 }}>
-                                <TypographyWithTooltip variant={"h5"} value={props.title} />
+                                <TypographyWithTooltip variant="h5" value={props.title} />
                             </Grid>
                         ) : null}
-                        <Grid size={{ xs: 12 }} className={styles.body}>
+                        <Grid
+                            size={{ xs: 12 }}
+                            sx={{
+                                marginTop: (theme) => theme.spacing(),
+                                paddingBottom: (theme) => theme.spacing(),
+                                paddingTop: (theme) => theme.spacing(),
+                            }}
+                        >
                             {props.children}
                         </Grid>
                     </Grid>
@@ -64,26 +76,5 @@ const MinimalLayout = function (props: Props) {
         </Box>
     );
 };
-
-const useStyles = makeStyles((theme: Theme) => ({
-    root: {
-        minHeight: "90vh",
-        textAlign: "center",
-    },
-    rootContainer: {
-        paddingLeft: 32,
-        paddingRight: 32,
-    },
-    icon: {
-        margin: theme.spacing(),
-        width: "64px",
-        fill: theme.custom.icon,
-    },
-    body: {
-        marginTop: theme.spacing(),
-        paddingTop: theme.spacing(),
-        paddingBottom: theme.spacing(),
-    },
-}));
 
 export default MinimalLayout;

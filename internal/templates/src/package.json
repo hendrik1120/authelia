@@ -1,38 +1,30 @@
 {
-	"name": "authelia-email-templates",
-	"version": "1.0.0",
-	"description": "",
-	"scripts": {
-		"dev": "email dev",
-		"build": "email build",
-		"render": "tsc && node dist/index.js"
-	},
-	"keywords": [],
-	"author": "Authelia",
-	"license": "Apache-2.0",
-	"dependencies": {
-		"@react-email/components": "0.0.33",
-		"@react-email/render": "1.0.5",
-		"esbuild": "0.25.1",
-		"react": "18.3.1",
-		"react-dom": "18.3.1",
-		"react-email": "3.0.7",
-		"tailwind-merge": "3.0.2",
-		"tailwindcss": "4.0.14",
-		"typescript": "5.8.2"
-	},
-	"devDependencies": {
-		"@radix-ui/colors": "3.0.0",
-		"@types/node": "22.13.10",
-		"@types/react": "18.3.18",
-		"@types/react-dom": "18.3.5",
-		"eslint": "9.22.0",
-		"tsx": "4.19.3",
-		"vitest": "3.0.8"
-	},
-	"pnpm": {
-		"overrides": {
-			"nanoid@<3.3.8": "3.3.10"
-		}
-	}
+  "name": "authelia-email-templates",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "email dev",
+    "render": "tsc && node dist/index.js"
+  },
+  "keywords": [],
+  "author": "Authelia",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "react-email": "6.1.1",
+    "tailwind-merge": "3.6.0",
+    "tailwindcss": "4.3.0",
+    "typescript": "6.0.3"
+  },
+  "devDependencies": {
+    "@radix-ui/colors": "3.0.0",
+    "@react-email/ui": "6.1.1",
+    "@types/node": "25.7.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "10.3.0",
+    "tsx": "4.21.0",
+    "vitest": "4.1.6"
+  }
 }

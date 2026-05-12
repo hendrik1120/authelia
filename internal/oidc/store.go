@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	oauthelia2 "authelia.com/provider/oauth2"
 	"authelia.com/provider/oauth2/handler/oauth2"
 	"authelia.com/provider/oauth2/handler/openid"
 	"authelia.com/provider/oauth2/handler/rfc8628"
 	ostorage "authelia.com/provider/oauth2/storage"
-	"github.com/google/uuid"
 
 	"github.com/authelia/authelia/v4/internal/authorization"
 	"github.com/authelia/authelia/v4/internal/configuration/schema"
@@ -285,7 +286,12 @@ func (s *Store) CreateDeviceCodeSession(ctx context.Context, signature string, r
 }
 
 func (s *Store) UpdateDeviceCodeSession(ctx context.Context, signature string, request oauthelia2.DeviceAuthorizeRequester) (err error) {
-	return s.provider.UpdateOAuth2DeviceCodeSession(ctx, signature, int(request.GetStatus()), request.GetLastChecked())
+	session, err := model.NewOAuth2DeviceCodeSessionFromRequest(request)
+	if err != nil {
+		return err
+	}
+
+	return s.provider.UpdateOAuth2DeviceCodeSessionData(ctx, session)
 }
 
 func (s *Store) GetDeviceCodeSession(ctx context.Context, signature string, session oauthelia2.Session) (request oauthelia2.DeviceAuthorizeRequester, err error) {
@@ -296,6 +302,10 @@ func (s *Store) GetDeviceCodeSession(ctx context.Context, signature string, sess
 
 	if !data.Active {
 		return nil, oauthelia2.ErrInvalidatedDeviceCode
+	}
+
+	if session == nil {
+		session = NewSession()
 	}
 
 	r, err := data.ToRequest(ctx, session, s)
@@ -318,6 +328,10 @@ func (s *Store) GetDeviceCodeSessionByUserCode(ctx context.Context, signature st
 
 	if !data.Active {
 		return nil, oauthelia2.ErrInvalidatedUserCode
+	}
+
+	if session == nil {
+		session = NewSession()
 	}
 
 	r, err := data.ToRequest(ctx, session, s)

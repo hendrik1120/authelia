@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"time"
 
-	"authelia.com/provider/oauth2/storage"
 	"github.com/google/uuid"
+
+	"authelia.com/provider/oauth2/storage"
 
 	"github.com/authelia/authelia/v4/internal/model"
 )
@@ -197,7 +198,7 @@ type Provider interface {
 	SaveOAuth2ConsentPreConfiguration(ctx context.Context, config model.OAuth2ConsentPreConfig) (insertedID int64, err error)
 
 	// LoadOAuth2ConsentPreConfigurations returns an OAuth2.0 consents pre-configurations from the storage provider given the consent signature.
-	LoadOAuth2ConsentPreConfigurations(ctx context.Context, clientID string, subject uuid.UUID) (rows *ConsentPreConfigRows, err error)
+	LoadOAuth2ConsentPreConfigurations(ctx context.Context, clientID string, subject uuid.UUID, now time.Time) (rows *ConsentPreConfigRows, err error)
 
 	/*
 		Implementation for OAuth2.0 Consent Sessions.
@@ -205,9 +206,6 @@ type Provider interface {
 
 	// SaveOAuth2ConsentSession inserts an OAuth2.0 consent session to the storage provider.
 	SaveOAuth2ConsentSession(ctx context.Context, consent *model.OAuth2ConsentSession) (err error)
-
-	// SaveOAuth2ConsentSessionSubject updates an OAuth2.0 consent session in the storage provider with the subject.
-	SaveOAuth2ConsentSessionSubject(ctx context.Context, consent *model.OAuth2ConsentSession) (err error)
 
 	// SaveOAuth2ConsentSessionResponse updates an OAuth2.0 consent session in the storage provider with the response.
 	SaveOAuth2ConsentSessionResponse(ctx context.Context, consent *model.OAuth2ConsentSession, rejection bool) (err error)
@@ -250,7 +248,10 @@ type Provider interface {
 	SaveOAuth2DeviceCodeSession(ctx context.Context, session *model.OAuth2DeviceCodeSession) (err error)
 
 	// UpdateOAuth2DeviceCodeSession updates an OAuth2.0 device code session in the storage provider.
-	UpdateOAuth2DeviceCodeSession(ctx context.Context, signature string, status int, checked time.Time) (err error)
+	UpdateOAuth2DeviceCodeSession(ctx context.Context, session *model.OAuth2DeviceCodeSession) (err error)
+
+	// UpdateOAuth2DeviceCodeSessionData updates an OAuth2.0 device code session data in the storage provider.
+	UpdateOAuth2DeviceCodeSessionData(ctx context.Context, session *model.OAuth2DeviceCodeSession) (err error)
 
 	// DeactivateOAuth2DeviceCodeSession marks an OAuth2.0 device code session as inactive in the storage provider.
 	DeactivateOAuth2DeviceCodeSession(ctx context.Context, signature string) (err error)
@@ -315,6 +316,11 @@ type Provider interface {
 
 	// SchemaMigrate migrates from the storage provider's current schema version to the provided schema version.
 	SchemaMigrate(ctx context.Context, up bool, version int) (err error)
+
+	// SchemaEncryptionRotateHMACKey rotates a HMAC key in the storage provider given a specific name. This is a
+	// destructive action and it cannot be recovered from. Any values generated and saved in the database will become
+	// immediately and irrevocably invalid.
+	SchemaEncryptionRotateHMACKey(ctx context.Context, name string) (err error)
 
 	// SchemaEncryptionChangeKey uses the currently configured key to decrypt values in the storage provider and the key
 	// provided by this command to encrypt the values again and update them using a transaction.

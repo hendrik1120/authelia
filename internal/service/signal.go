@@ -22,6 +22,8 @@ func ProvisionLoggingSignal(ctx Context) (service Provider, err error) {
 		signals: []os.Signal{syscall.SIGHUP},
 		action:  logging.Reopen,
 		log:     ctx.GetLogger().WithFields(map[string]any{logFieldService: serviceTypeSignal, serviceTypeSignal: "log-reload"}),
+		notify:  make(chan os.Signal, 1),
+		quit:    make(chan struct{}),
 	}, nil
 }
 
@@ -36,7 +38,7 @@ type Signal struct {
 	quit   chan struct{}
 }
 
-// ServiceType returns the service type for this service, which is always 'server'.
+// ServiceType returns the service type for this service, which is always 'signal'.
 func (service *Signal) ServiceType() string {
 	return serviceTypeSignal
 }
@@ -48,10 +50,6 @@ func (service *Signal) ServiceName() string {
 
 // Run the ServerService.
 func (service *Signal) Run() (err error) {
-	service.quit = make(chan struct{})
-
-	service.notify = make(chan os.Signal, 1)
-
 	signal.Notify(service.notify, service.signals...)
 
 	for {

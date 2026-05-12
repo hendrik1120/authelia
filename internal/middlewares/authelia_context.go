@@ -15,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 
+	"github.com/authelia/authelia/v4/internal/authentication"
 	"github.com/authelia/authelia/v4/internal/clock"
 	"github.com/authelia/authelia/v4/internal/configuration/schema"
 	"github.com/authelia/authelia/v4/internal/expression"
@@ -22,6 +23,7 @@ import (
 	"github.com/authelia/authelia/v4/internal/model"
 	"github.com/authelia/authelia/v4/internal/random"
 	"github.com/authelia/authelia/v4/internal/session"
+	"github.com/authelia/authelia/v4/internal/storage"
 	"github.com/authelia/authelia/v4/internal/utils"
 )
 
@@ -47,7 +49,6 @@ func NewAutheliaCtx(requestCTX *fasthttp.RequestCtx, configuration schema.Config
 	ctx.Providers = providers
 	ctx.Configuration = configuration
 	ctx.Logger = NewRequestLogger(ctx.RequestCtx)
-	ctx.Clock = clock.New()
 
 	return ctx
 }
@@ -83,30 +84,6 @@ func (ctx *AutheliaCtx) SetJSONError(message string) {
 	if err := ctx.ReplyJSON(ErrorResponse{Status: "KO", Message: message}, 0); err != nil {
 		ctx.Logger.Error(err)
 	}
-}
-
-// SetAuthenticationErrorJSON sets the body of the response to an JSON error KO message.
-func (ctx *AutheliaCtx) SetAuthenticationErrorJSON(status int, message string, authentication, elevation bool) {
-	if status > fasthttp.StatusOK {
-		ctx.SetStatusCode(status)
-	}
-
-	if err := ctx.ReplyJSON(AuthenticationErrorResponse{Status: "KO", Message: message, Authentication: authentication, Elevation: elevation}, 0); err != nil {
-		ctx.Logger.Error(err)
-	}
-}
-
-// ReplyError reply with an error but does not display any stack trace in the logs.
-func (ctx *AutheliaCtx) ReplyError(err error, message string) {
-	b, marshalErr := json.Marshal(ErrorResponse{Status: "KO", Message: message})
-
-	if marshalErr != nil {
-		ctx.Logger.Error(marshalErr)
-	}
-
-	ctx.SetContentTypeApplicationJSON()
-	ctx.SetBody(b)
-	ctx.Logger.Debug(err)
 }
 
 // ReplyStatusCode resets a response and replies with the given status code and relevant message.
@@ -161,7 +138,7 @@ func (ctx *AutheliaCtx) XForwardedMethod() (method []byte) {
 func (ctx *AutheliaCtx) XForwardedProto() (proto []byte) {
 	proto = ctx.Request.Header.PeekBytes(headerXForwardedProto)
 
-	if proto == nil {
+	if len(proto) == 0 {
 		if ctx.IsTLS() {
 			return protoHTTPS
 		}
@@ -181,8 +158,8 @@ func (ctx *AutheliaCtx) XForwardedHost() (host []byte) {
 func (ctx *AutheliaCtx) GetXForwardedHost() (host []byte) {
 	host = ctx.XForwardedHost()
 
-	if host == nil {
-		return ctx.RequestCtx.Host()
+	if len(host) == 0 {
+		return ctx.Host()
 	}
 
 	return host
@@ -261,17 +238,8 @@ func (ctx *AutheliaCtx) BasePathSlash() string {
 	return strSlash
 }
 
-// RootURL returns the Root URL.
-func (ctx *AutheliaCtx) RootURL() (issuerURL *url.URL) {
-	return &url.URL{
-		Scheme: string(ctx.XForwardedProto()),
-		Host:   string(ctx.GetXForwardedHost()),
-		Path:   ctx.BasePath(),
-	}
-}
-
-// RootURLSlash is the same as RootURL but includes a final slash as well.
-func (ctx *AutheliaCtx) RootURLSlash() (issuerURL *url.URL) {
+// TemplateRootURL is the same as RootURL but includes a final slash as well.
+func (ctx *AutheliaCtx) TemplateRootURL() (issuerURL *url.URL) {
 	return &url.URL{
 		Scheme: string(ctx.XForwardedProto()),
 		Host:   string(ctx.GetXForwardedHost()),
@@ -294,6 +262,24 @@ func (ctx *AutheliaCtx) GetCookieDomainFromTargetURI(targetURI *url.URL) string 
 	}
 
 	return ""
+}
+
+func (ctx *AutheliaCtx) GetCookieConfigFromAutheliaURL(autheliaURL *url.URL) (cookie schema.SessionCookie) {
+	if len(ctx.Configuration.Session.Cookies) == 1 && ctx.Configuration.Session.Cookies[0].AutheliaURL == nil {
+		return ctx.Configuration.Session.Cookies[0]
+	}
+
+	for _, cookie = range ctx.Configuration.Session.Cookies {
+		if cookie.AutheliaURL == nil {
+			continue
+		}
+
+		if autheliaURL.Host == cookie.AutheliaURL.Host {
+			return cookie
+		}
+	}
+
+	return schema.SessionCookie{}
 }
 
 // IsSafeRedirectionTargetURI returns true if the targetURI is within the scope of a cookie domain and secure.
@@ -352,6 +338,10 @@ func (ctx *AutheliaCtx) GetSessionProvider() (provider *session.Session, err err
 func (ctx *AutheliaCtx) GetCookieDomainSessionProvider(domain string) (provider *session.Session, err error) {
 	if domain == "" {
 		return nil, fmt.Errorf("unable to retrieve session cookie domain provider: no configured session cookie domain matches the domain '%s'", domain)
+	}
+
+	if ctx.Providers.SessionProvider == nil {
+		return nil, fmt.Errorf("unable to retrieve session cookie domain provider: no session provider is configured")
 	}
 
 	return ctx.Providers.SessionProvider.Get(domain)
@@ -434,21 +424,13 @@ func (ctx *AutheliaCtx) ReplyOK() {
 }
 
 // ParseBody parse the request body into the type of value.
-func (ctx *AutheliaCtx) ParseBody(value any) error {
-	err := json.Unmarshal(ctx.PostBody(), &value)
-
-	if err != nil {
+func (ctx *AutheliaCtx) ParseBody(value any) (err error) {
+	if err = json.Unmarshal(ctx.PostBody(), &value); err != nil {
 		return fmt.Errorf("unable to parse body: %w", err)
 	}
 
-	valid, err := govalidator.ValidateStruct(value)
-
-	if err != nil {
+	if _, err = govalidator.ValidateStruct(value); err != nil {
 		return fmt.Errorf("unable to validate body: %w", err)
-	}
-
-	if !valid {
-		return fmt.Errorf("Body is not valid")
 	}
 
 	return nil
@@ -474,16 +456,6 @@ func (ctx *AutheliaCtx) SetContentTypeApplicationYAML() {
 	ctx.SetContentTypeBytes(contentTypeApplicationYAML)
 }
 
-// SetContentSecurityPolicy sets the Content-Security-Policy header.
-func (ctx *AutheliaCtx) SetContentSecurityPolicy(value string) {
-	ctx.Response.Header.SetBytesK(headerContentSecurityPolicy, value)
-}
-
-// SetContentSecurityPolicyBytes sets the Content-Security-Policy header.
-func (ctx *AutheliaCtx) SetContentSecurityPolicyBytes(value []byte) {
-	ctx.Response.Header.SetBytesKV(headerContentSecurityPolicy, value)
-}
-
 // SetJSONBody Set json body.
 func (ctx *AutheliaCtx) SetJSONBody(value any) error {
 	return ctx.ReplyJSON(OKResponse{Status: "OK", Data: value}, 0)
@@ -499,11 +471,7 @@ func (ctx *AutheliaCtx) RemoteIP() net.IP {
 func (ctx *AutheliaCtx) GetXForwardedURL() (requestURI *url.URL, err error) {
 	forwardedProto, forwardedHost, forwardedURI := ctx.XForwardedProto(), ctx.GetXForwardedHost(), ctx.GetXForwardedURI()
 
-	if forwardedProto == nil {
-		return nil, ErrMissingXForwardedProto
-	}
-
-	if forwardedHost == nil {
+	if len(forwardedHost) == 0 {
 		return nil, ErrMissingXForwardedHost
 	}
 
@@ -548,14 +516,11 @@ func (ctx *AutheliaCtx) GetXOriginalURLOrXForwardedURL() (requestURI *url.URL, e
 
 // GetOrigin returns the expected origin for requests from this endpoint.
 func (ctx *AutheliaCtx) GetOrigin() (origin *url.URL, err error) {
-	if origin, err = ctx.GetXOriginalURLOrXForwardedURL(); err != nil {
+	if origin, err = ctx.GetXForwardedURL(); err != nil {
 		return nil, err
 	}
 
-	origin.Path = ""
-	origin.RawPath = ""
-
-	return origin, nil
+	return &url.URL{Scheme: origin.Scheme, Host: origin.Host}, nil
 }
 
 // IssuerURL returns the expected Issuer.
@@ -566,12 +531,29 @@ func (ctx *AutheliaCtx) IssuerURL() (issuerURL *url.URL, err error) {
 		Path:   ctx.BasePath(),
 	}
 
-	if len(issuerURL.Scheme) == 0 {
-		issuerURL.Scheme = strProtoHTTPS
-	}
-
 	if len(issuerURL.Host) == 0 {
 		return nil, ErrMissingXForwardedHost
+	}
+
+	switch issuerURL.Scheme {
+	case "":
+		return nil, ErrMissingXForwardedProto
+	case strProtoHTTPS:
+		break
+	default:
+		return nil, fmt.Errorf("invalid X-Forwarded-Proto header value '%s'", issuerURL.Scheme)
+	}
+
+	cookie := ctx.GetCookieConfigFromAutheliaURL(issuerURL)
+
+	if cookie.Domain == "" {
+		return nil, fmt.Errorf("error occurred discovering the issuer: no session cookie configuration matches url '%s'", issuerURL)
+	}
+
+	if cookie.AutheliaURL != nil {
+		return issuerURL, nil
+	} else if !utils.HasURIDomainSuffix(issuerURL, cookie.Domain) {
+		return nil, fmt.Errorf("error occurred discovering the issuer: the hostname '%s' does not match the configured domain '%s'", issuerURL.Hostname(), cookie.Domain)
 	}
 
 	return issuerURL, nil
@@ -648,28 +630,54 @@ func (ctx *AutheliaCtx) RecordAuthn(success, regulated bool, method string) {
 }
 
 // GetClock returns the clock. For use with interface fulfillment.
-func (ctx *AutheliaCtx) GetClock() (clock clock.Provider) {
-	return ctx.Clock
+func (ctx *AutheliaCtx) GetClock() (provider clock.Provider) {
+	if ctx.Providers.Clock == nil {
+		ctx.Providers.Clock = clock.New()
+	}
+
+	return ctx.Providers.Clock
+}
+
+func (ctx *AutheliaCtx) GetJWTWithTimeFuncOption() (option jwt.ParserOption) {
+	return jwt.WithTimeFunc(ctx.GetClock().Now)
 }
 
 // GetRandom returns the random provider. For use with interface fulfillment.
-func (ctx *AutheliaCtx) GetRandom() (random random.Provider) {
+func (ctx *AutheliaCtx) GetRandom() (provider random.Provider) {
+	if ctx.Providers.Random == nil {
+		ctx.Providers.Random = random.New()
+	}
+
 	return ctx.Providers.Random
 }
 
-// GetJWTWithTimeFuncOption returns the WithTimeFunc jwt.ParserOption. For use with interface fulfillment.
-func (ctx *AutheliaCtx) GetJWTWithTimeFuncOption() (option jwt.ParserOption) {
-	return jwt.WithTimeFunc(ctx.Clock.Now)
+// GetLogger returns the logger for this request.
+func (ctx *AutheliaCtx) GetLogger() (logger *logrus.Entry) {
+	return ctx.Logger
 }
 
 // GetConfiguration returns the current configuration.
-func (ctx *AutheliaCtx) GetConfiguration() (config schema.Configuration) {
-	return ctx.Configuration
+func (ctx *AutheliaCtx) GetConfiguration() (config *schema.Configuration) {
+	copied := ctx.Configuration
+
+	return &copied
 }
 
 // GetProviders returns the providers for this context.
 func (ctx *AutheliaCtx) GetProviders() (providers Providers) {
 	return ctx.Providers
+}
+
+func (ctx *AutheliaCtx) GetUserProvider() authentication.UserProvider {
+	return ctx.Providers.UserProvider
+}
+
+func (ctx *AutheliaCtx) GetProviderStorage() storage.Provider {
+	return ctx.Providers.StorageProvider
+}
+
+func (ctx *AutheliaCtx) GetProviderUserAttributeResolver() expression.UserAttributeResolver {
+	return ctx.Providers.UserAttributeResolver
 }
 
 func (ctx *AutheliaCtx) GetWebAuthnProvider() (w *webauthn.WebAuthn, err error) {
@@ -725,10 +733,6 @@ func (ctx *AutheliaCtx) GetWebAuthnProvider() (w *webauthn.WebAuthn, err error) 
 	return webauthn.New(config)
 }
 
-func (ctx *AutheliaCtx) GetProviderUserAttributeResolver() expression.UserAttributeResolver {
-	return ctx.Providers.UserAttributeResolver
-}
-
 // Value is a shaded method of context.Context which returns the AutheliaCtx struct if the key is the internal key
 // otherwise it returns the shaded value.
 func (ctx *AutheliaCtx) Value(key any) any {
@@ -737,9 +741,4 @@ func (ctx *AutheliaCtx) Value(key any) any {
 	}
 
 	return ctx.RequestCtx.Value(key)
-}
-
-// GetLogger returns the logger for this request.
-func (ctx *AutheliaCtx) GetLogger() *logrus.Entry {
-	return ctx.Logger
 }

@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"net/url"
 
-	oauthelia2 "authelia.com/provider/oauth2"
 	"github.com/google/uuid"
+
+	oauthelia2 "authelia.com/provider/oauth2"
 
 	"github.com/authelia/authelia/v4/internal/authentication"
 	"github.com/authelia/authelia/v4/internal/middlewares"
@@ -27,10 +28,12 @@ type configurationBody struct {
 
 // bodySignTOTPRequest is the  model of the request body of TOTP 2FA authentication endpoint.
 type bodySignTOTPRequest struct {
-	Token      string `json:"token" valid:"required"`
-	TargetURL  string `json:"targetURL"`
-	Workflow   string `json:"workflow"`
-	WorkflowID string `json:"workflowID"`
+	Token     string `json:"token" valid:"required"`
+	TargetURL string `json:"targetURL"`
+	FlowID    string `json:"flowID"`
+	Flow      string `json:"flow"`
+	SubFlow   string `json:"subflow"`
+	UserCode  string `json:"userCode"`
 }
 
 type bodyRegisterTOTP struct {
@@ -45,9 +48,11 @@ type bodyRegisterFinishTOTP struct {
 
 // bodySignWebAuthnRequest is the  model of the request body of WebAuthn 2FA authentication endpoint.
 type bodySignWebAuthnRequest struct {
-	TargetURL  string `json:"targetURL"`
-	Workflow   string `json:"workflow"`
-	WorkflowID string `json:"workflowID"`
+	TargetURL string `json:"targetURL"`
+	FlowID    string `json:"flowID"`
+	Flow      string `json:"flow"`
+	SubFlow   string `json:"subflow"`
+	UserCode  string `json:"userCode"`
 
 	Response json.RawMessage `json:"response"`
 }
@@ -55,10 +60,12 @@ type bodySignWebAuthnRequest struct {
 // bodySignPasskeyRequest is the  model of the request body of WebAuthn 2FA authentication endpoint.
 type bodySignPasskeyRequest struct {
 	TargetURL      string `json:"targetURL"`
-	Workflow       string `json:"workflow"`
-	WorkflowID     string `json:"workflowID"`
 	RequestMethod  string `json:"requestMethod"`
 	KeepMeLoggedIn *bool  `json:"keepMeLoggedIn"`
+	FlowID         string `json:"flowID"`
+	Flow           string `json:"flow"`
+	SubFlow        string `json:"subflow"`
+	UserCode       string `json:"userCode"`
 
 	Response json.RawMessage `json:"response"`
 }
@@ -91,12 +98,14 @@ type bodyEditWebAuthnCredentialRequest struct {
 	Description string `json:"description"`
 }
 
-// bodySignDuoRequest is the  model of the request body of Duo 2FA authentication endpoint.
+// bodySignDuoRequest is the model of the request body of Duo 2FA authentication endpoint.
 type bodySignDuoRequest struct {
-	TargetURL  string `json:"targetURL"`
-	Passcode   string `json:"passcode"`
-	Workflow   string `json:"workflow"`
-	WorkflowID string `json:"workflowID"`
+	TargetURL string `json:"targetURL"`
+	Passcode  string `json:"passcode"`
+	FlowID    string `json:"flowID"`
+	Flow      string `json:"flow"`
+	SubFlow   string `json:"subflow"`
+	UserCode  string `json:"userCode"`
 }
 
 // bodyPreferred2FAMethod the selected 2FA method.
@@ -108,30 +117,34 @@ type bodyPreferred2FAMethod struct {
 type bodyFirstFactorRequest struct {
 	Username       string `json:"username" valid:"required"`
 	Password       string `json:"password" valid:"required"`
-	Workflow       string `json:"workflow"`
-	WorkflowID     string `json:"workflowID"`
 	TargetURL      string `json:"targetURL"`
 	RequestMethod  string `json:"requestMethod"`
 	KeepMeLoggedIn *bool  `json:"keepMeLoggedIn"`
-	// KeepMeLoggedIn: Cannot require this field because of https://github.com/asaskevich/govalidator/pull/329
-	// TODO(c.michaud): add required validation once the above PR is merged.
+	FlowID         string `json:"flowID"`
+	Flow           string `json:"flow"`
+	SubFlow        string `json:"subflow"`
+	UserCode       string `json:"userCode"`
 }
 
 // bodyFirstFactorRequest represents the JSON body received by the endpoint.
 type bodySecondFactorPasswordRequest struct {
-	Password   string `json:"password" valid:"required"`
-	TargetURL  string `json:"targetURL"`
-	Workflow   string `json:"workflow"`
-	WorkflowID string `json:"workflowID"`
+	Password  string `json:"password" valid:"required"`
+	TargetURL string `json:"targetURL"`
+	FlowID    string `json:"flowID"`
+	Flow      string `json:"flow"`
+	SubFlow   string `json:"subflow"`
+	UserCode  string `json:"userCode"`
 }
 
 // bodyFirstFactorRequest represents the JSON body received by the endpoint.
 type bodyFirstFactorReauthenticateRequest struct {
 	Password      string `json:"password" valid:"required"`
-	Workflow      string `json:"workflow"`
-	WorkflowID    string `json:"workflowID"`
 	TargetURL     string `json:"targetURL"`
 	RequestMethod string `json:"requestMethod"`
+	FlowID        string `json:"flowID"`
+	Flow          string `json:"flow"`
+	SubFlow       string `json:"subflow"`
+	UserCode      string `json:"userCode"`
 }
 
 // checkURIWithinDomainRequestBody represents the JSON body received by the endpoint checking if an URI is within
@@ -169,11 +182,13 @@ type DuoDevice struct {
 	Capabilities []string `json:"capabilities"`
 }
 
-// DuoDevicesResponse represents all available user devices and methods as well as an optional enrollment url.
+// DuoDevicesResponse represents all available user devices and methods, the user's preferred device and method selections, and an optional enrollment url.
 type DuoDevicesResponse struct {
-	Result    string      `json:"result" valid:"required"`
-	Devices   []DuoDevice `json:"devices,omitempty"`
-	EnrollURL string      `json:"enroll_url,omitempty"`
+	Result          string      `json:"result" valid:"required"`
+	Devices         []DuoDevice `json:"devices,omitempty"`
+	EnrollURL       string      `json:"enroll_url,omitempty"`
+	PreferredDevice string      `json:"preferred_device,omitempty"`
+	PreferredMethod string      `json:"preferred_method,omitempty"`
 }
 
 // DuoSignResponse represents a result of the preauth and or auth call with further optional info.

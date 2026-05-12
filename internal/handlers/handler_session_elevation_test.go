@@ -300,7 +300,7 @@ func TestUserSessionElevationGET(t *testing.T) {
 
 			defer mock.Close()
 
-			mock.Ctx.Clock = &mock.Clock
+			mock.Ctx.Providers.Clock = &mock.Clock
 
 			if tc.setup != nil {
 				tc.setup(t, mock)
@@ -362,7 +362,7 @@ func TestUserSessionElevationPOST(t *testing.T) {
 						Return("abc123", nil),
 					mock.NotifierMock.EXPECT().Send(mock.Ctx, mail.Address{Name: testDisplayName, Address: "john@example.com"}, "Confirm your identity", gomock.Any(), templates.EmailIdentityVerificationOTCValues{
 						Title:              "Confirm your identity",
-						RevocationLinkURL:  "http://example.com/revoke/one-time-code?id=AQIDBAUGRyKJEBESExQVAA",
+						RevocationLinkURL:  "https://login.example.com:8080/revoke/one-time-code?id=AQIDBAUGRyKJEBESExQVAA",
 						RevocationLinkText: "Revoke",
 						DisplayName:        testDisplayName,
 						Domain:             "example.com",
@@ -412,7 +412,7 @@ func TestUserSessionElevationPOST(t *testing.T) {
 						Return("abc123", nil),
 					mock.NotifierMock.EXPECT().Send(mock.Ctx, mail.Address{Name: testDisplayName, Address: "john@example.com"}, "Confirm your identity", gomock.Any(), templates.EmailIdentityVerificationOTCValues{
 						Title:              "Confirm your identity",
-						RevocationLinkURL:  "http://example.com/revoke/one-time-code?id=AQIDBAUGRyKJEBESExQVAA",
+						RevocationLinkURL:  "https://login.example.com:8080/revoke/one-time-code?id=AQIDBAUGRyKJEBESExQVAA",
 						RevocationLinkText: "Revoke",
 						DisplayName:        testDisplayName,
 						Domain:             "example.com",
@@ -560,7 +560,7 @@ func TestUserSessionElevationPOST(t *testing.T) {
 			mock.Ctx.Configuration.IdentityValidation.ElevatedSession.ElevationLifespan = time.Minute
 			mock.Ctx.Configuration.IdentityValidation.ElevatedSession.CodeLifespan = time.Minute
 
-			mock.Ctx.Clock = &mock.Clock
+			mock.Ctx.Providers.Clock = &mock.Clock
 			mock.Ctx.Providers.Random = mock.RandomMock
 
 			if tc.setup != nil {
@@ -1054,7 +1054,7 @@ func TestUserSessionElevationPUT(t *testing.T) {
 			mock.Ctx.Configuration.IdentityValidation.ElevatedSession.ElevationLifespan = time.Minute
 			mock.Ctx.Configuration.IdentityValidation.ElevatedSession.CodeLifespan = time.Minute
 
-			mock.Ctx.Clock = &mock.Clock
+			mock.Ctx.Providers.Clock = &mock.Clock
 			mock.Ctx.Providers.Random = mock.RandomMock
 
 			if len(tc.have) != 0 {
@@ -1174,6 +1174,35 @@ func TestUserSessionElevationDELETE(t *testing.T) {
 			fasthttp.StatusOK,
 			func(t *testing.T, mock *mocks.MockAutheliaCtx) {
 				AssertLogEntryMessageAndError(t, mock.Hook.LastEntry(), "Error occurred revoking user session elevation One-Time Code challenge: error occurred saving the revocation to the storage backend", "failed to update")
+			},
+		},
+		{
+			"ShouldHandleStorageNilNil",
+			func(t *testing.T, mock *mocks.MockAutheliaCtx) {
+				us, err := mock.Ctx.GetSession()
+
+				require.NoError(t, err)
+
+				us.Username = testUsername
+				us.DisplayName = testDisplayName
+				us.Emails = []string{"john@example.com"}
+
+				us.AuthenticationMethodRefs.UsernameAndPassword = true
+
+				require.NoError(t, mock.Ctx.SaveSession(us))
+
+				gomock.InOrder(
+					mock.StorageMock.
+						EXPECT().
+						LoadOneTimeCodeByPublicID(mock.Ctx, id).
+						Return(nil, nil),
+				)
+			},
+			eid,
+			`{"status":"KO","message":"Operation failed."}`,
+			fasthttp.StatusOK,
+			func(t *testing.T, mock *mocks.MockAutheliaCtx) {
+				AssertLogEntryMessageAndError(t, mock.Hook.LastEntry(), "Error occurred revoking user session elevation One-Time Code challenge: error occurred retrieving the code challenge from the storage backend", "the provided one-time code public id '01020304-0506-4722-8910-111213141500' does not appear to exist")
 			},
 		},
 		{
@@ -1383,7 +1412,7 @@ func TestUserSessionElevationDELETE(t *testing.T) {
 			mock.Ctx.Configuration.IdentityValidation.ElevatedSession.ElevationLifespan = time.Minute
 			mock.Ctx.Configuration.IdentityValidation.ElevatedSession.CodeLifespan = time.Minute
 
-			mock.Ctx.Clock = &mock.Clock
+			mock.Ctx.Providers.Clock = &mock.Clock
 			mock.Ctx.Providers.Random = mock.RandomMock
 
 			if len(tc.have) != 0 {

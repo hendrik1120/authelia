@@ -4,76 +4,56 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/mohae/deepcopy"
+
 	oauthelia2 "authelia.com/provider/oauth2"
 	"authelia.com/provider/oauth2/handler/openid"
 	"authelia.com/provider/oauth2/token/jwt"
-	"github.com/google/uuid"
-	"github.com/mohae/deepcopy"
 
 	"github.com/authelia/authelia/v4/internal/model"
 )
 
-// NewSession creates a new empty OpenIDSession struct.
+// NewSession creates a new empty OpenIDSession struct with the requested at value being time.Now().
 func NewSession() (session *Session) {
-	return &Session{
-		DefaultSession: &openid.DefaultSession{
-			Claims: &jwt.IDTokenClaims{
-				Extra: map[string]any{},
-			},
-			Headers: &jwt.Headers{
-				Extra: map[string]any{},
-			},
-		},
-		Extra: map[string]any{},
-	}
+	return NewSessionWithRequestedAt(time.Now())
+}
+
+// NewSessionWithRequestedAt creates a new empty OpenIDSession struct with a specific requested at value.
+func NewSessionWithRequestedAt(requestedAt time.Time) (session *Session) {
+	session = &Session{}
+
+	InitializeSessionDefaults(session)
+
+	session.SetRequestedAt(requestedAt.UTC())
+
+	return session
 }
 
 // NewSessionWithRequester uses details from a Requester to generate an OpenIDSession.
 func NewSessionWithRequester(ctx Context, issuer *url.URL, kid, username string, amr []string, extra map[string]any,
 	authTime time.Time, consent *model.OAuth2ConsentSession, requester oauthelia2.Requester, claims *ClaimsRequests) (session *Session) {
-	if extra == nil {
-		extra = map[string]any{}
-	}
+	session = NewSessionWithRequestedAt(ctx.GetClock().Now())
 
-	session = &Session{
-		DefaultSession: &openid.DefaultSession{
-			Claims: &jwt.IDTokenClaims{
-				Issuer:                          issuer.String(),
-				Subject:                         consent.Subject.UUID.String(),
-				IssuedAt:                        jwt.NewNumericDate(ctx.GetClock().Now()),
-				AuthTime:                        jwt.NewNumericDate(authTime),
-				RequestedAt:                     jwt.NewNumericDate(consent.RequestedAt),
-				Nonce:                           requester.GetRequestForm().Get(ClaimNonce),
-				Extra:                           extra,
-				AuthenticationMethodsReferences: amr,
-				AuthorizedParty:                 requester.GetClient().GetID(),
-			},
-			Headers: &jwt.Headers{
-				Extra: map[string]any{
-					JWTHeaderKeyIdentifier: kid,
-				},
-			},
-			Subject:  consent.Subject.UUID.String(),
-			Username: username,
-		},
-		ChallengeID:           model.NullUUID(consent.ChallengeID),
-		ClientID:              requester.GetClient().GetID(),
-		ExcludeNotBeforeClaim: false,
-		AllowedTopLevelClaims: nil,
-		ClaimRequests:         claims,
-		GrantedClaims:         consent.GrantedClaims,
-		Extra:                 map[string]any{},
-	}
+	session.SetValuesFromRequester(requester)
+	session.SetValuesFromConsentSession(consent)
+	session.SetValuesGeneral(ctx, issuer, kid, username, amr, authTime, claims, extra)
 
 	return session
+}
+
+type AccessTokenSession struct {
+	Headers map[string]any `json:"-"`
+	Claims  map[string]any `json:"-"`
 }
 
 // Session holds OpenID Connect 1.0 Session information.
 type Session struct {
 	*openid.DefaultSession `json:"id_token"`
 
+	AccessToken *AccessTokenSession `json:"-"`
+
 	ChallengeID           uuid.NullUUID   `json:"challenge_id"`
-	KID                   string          `json:"kid"`
 	ClientID              string          `json:"client_id"`
 	ClientCredentials     bool            `json:"client_credentials"`
 	ExcludeNotBeforeClaim bool            `json:"exclude_nbf_claim"`
@@ -81,11 +61,6 @@ type Session struct {
 	ClaimRequests         *ClaimsRequests `json:"claim_requests,omitempty"`
 	GrantedClaims         []string        `json:"granted_claims,omitempty"`
 	Extra                 map[string]any  `json:"extra"`
-}
-
-// GetChallengeID returns the challenge id.
-func (s *Session) GetChallengeID() (challenge uuid.NullUUID) {
-	return s.ChallengeID
 }
 
 // GetJWTHeader returns the *jwt.Headers for the OAuth 2.0 JWT Profile Access Token.
@@ -96,8 +71,10 @@ func (s *Session) GetJWTHeader() (headers *jwt.Headers) {
 		},
 	}
 
-	if len(s.KID) != 0 {
-		headers.Extra[JWTHeaderKeyIdentifier] = s.KID
+	if s.AccessToken != nil {
+		for key, value := range s.AccessToken.Headers {
+			headers.Extra[key] = value
+		}
 	}
 
 	return headers
@@ -131,21 +108,23 @@ func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 		Extra:     map[string]any{},
 	}
 
-	if len(s.Extra) > 0 {
-		claims.Extra[ClaimExtra] = s.Extra
+	if s.AccessToken != nil {
+		for key, value := range s.AccessToken.Claims {
+			claims.Extra[key] = value
+		}
 	}
 
-	if s.DefaultSession != nil && s.DefaultSession.Claims != nil {
+	if s.DefaultSession != nil && s.Claims != nil {
 		for _, allowedClaim := range allowed {
-			if cl, ok := s.DefaultSession.Claims.Extra[allowedClaim]; ok {
+			if cl, ok := s.Claims.Extra[allowedClaim]; ok {
 				claims.Extra[allowedClaim] = cl
 			}
 		}
 
-		claims.Issuer = s.DefaultSession.Claims.Issuer
+		claims.Issuer = s.Claims.Issuer
 
-		if amr && len(s.DefaultSession.Claims.AuthenticationMethodsReferences) != 0 {
-			claims.Extra[ClaimAuthenticationMethodsReference] = s.DefaultSession.Claims.AuthenticationMethodsReferences
+		if amr && len(s.Claims.AuthenticationMethodsReferences) != 0 {
+			claims.Extra[ClaimAuthenticationMethodsReference] = s.Claims.AuthenticationMethodsReferences
 		}
 	}
 
@@ -156,18 +135,74 @@ func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 	return claims
 }
 
+func (s *Session) SetValuesFromRequester(requester oauthelia2.Requester) {
+	s.ClientID = requester.GetClient().GetID()
+	s.Claims.AuthorizedParty = requester.GetClient().GetID()
+	s.Claims.Nonce = requester.GetRequestForm().Get(FormParameterNonce)
+}
+
+func (s *Session) SetValuesFromConsentSession(consent *model.OAuth2ConsentSession) {
+	s.SetRequestedAt(consent.RequestedAt)
+
+	s.ChallengeID = model.NullUUID(consent.ChallengeID)
+	s.GrantedClaims = consent.GrantedClaims
+	s.Subject = consent.Subject.UUID.String()
+	s.Claims.Subject = consent.Subject.UUID.String()
+}
+
+func (s *Session) SetValuesGeneral(ctx Context, issuer *url.URL, kid string, username string, amr []string, authTime time.Time, claims *ClaimsRequests, extra map[string]any) {
+	if issuer != nil {
+		s.Claims.Issuer = issuer.String()
+	}
+
+	s.Claims.IssuedAt = jwt.NewNumericDate(ctx.GetClock().Now())
+
+	if !authTime.IsZero() {
+		s.Claims.AuthTime = jwt.NewNumericDate(authTime)
+	}
+
+	if len(kid) != 0 {
+		s.Headers.Extra[JWTHeaderKeyIdentifier] = kid
+	}
+
+	if len(username) != 0 {
+		s.Username = username
+	}
+
+	if len(amr) != 0 {
+		s.Claims.AuthenticationMethodsReferences = amr
+	}
+
+	if claims != nil {
+		s.ClaimRequests = claims
+	}
+
+	if len(extra) != 0 {
+		s.Claims.Extra = extra
+	}
+}
+
+// GetChallengeID returns the challenge id.
+func (s *Session) GetChallengeID() (challenge uuid.NullUUID) {
+	return s.ChallengeID
+}
+
 // GetIDTokenClaims returns the *jwt.IDTokenClaims for this session.
 func (s *Session) GetIDTokenClaims() (claims *jwt.IDTokenClaims) {
 	if s.DefaultSession == nil {
 		return nil
 	}
 
-	return s.DefaultSession.Claims
+	return s.Claims
 }
 
 // GetExtraClaims returns the Extra/Unregistered claims for this session.
 func (s *Session) GetExtraClaims() map[string]any {
-	return s.Extra
+	if s.AccessToken == nil {
+		return nil
+	}
+
+	return s.AccessToken.Claims
 }
 
 // Clone copies the OpenIDSession to a new oauthelia2.Session.
@@ -177,4 +212,33 @@ func (s *Session) Clone() oauthelia2.Session {
 	}
 
 	return deepcopy.Copy(s).(oauthelia2.Session)
+}
+
+// ConsentGrantImplicit that handles the implicit consent flow assigning the subject and responded at values then
+// allows ConsentGrant to finalize the grant mechanics.
+func ConsentGrantImplicit(consent *model.OAuth2ConsentSession, claims []string, subject uuid.UUID, respondedAt time.Time) {
+	consent.SetRespondedAt(respondedAt, 0)
+	consent.SetSubject(subject)
+
+	ConsentGrant(consent, false, claims)
+}
+
+// ConsentGrant is a helper function to perform specific consent granting functionality. In particular in honors the
+// requirements around consent like not allowing access to a refresh token unless the user has explicitly consented.
+func ConsentGrant(consent *model.OAuth2ConsentSession, explicit bool, claims []string) {
+	consent.GrantAudience()
+	consent.GrantClaims(claims)
+
+	if explicit {
+		consent.GrantScopes()
+	} else {
+		for _, scope := range consent.RequestedScopes {
+			switch scope {
+			case ScopeOffline, ScopeOfflineAccess:
+				continue
+			default:
+				consent.GrantScope(scope)
+			}
+		}
+	}
 }

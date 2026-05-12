@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 
-import { Box, Theme, useTheme } from "@mui/material";
-import makeStyles from "@mui/styles/makeStyles";
+import { Box, useTheme } from "@mui/material";
 
 import FingerTouchIcon from "@components/FingerTouchIcon";
 import LinearProgressBar from "@components/LinearProgressBar";
@@ -16,23 +15,14 @@ const WebAuthnRegisterIcon = function (props: Props) {
     const theme = useTheme();
     const [timerPercent, triggerTimer] = useTimer(props.timeout);
 
-    const styles = makeStyles((theme: Theme) => ({
-        icon: {
-            display: "inline-block",
-        },
-        progressBar: {
-            marginTop: theme.spacing(),
-        },
-    }))();
-
     useEffect(() => {
         triggerTimer();
     }, [triggerTimer]);
 
     return (
-        <Box className={styles.icon} sx={{ minHeight: 101 }}>
+        <Box sx={{ display: "inline-block", minHeight: 101 }}>
             <IconWithContext icon={<FingerTouchIcon size={64} animated strong />}>
-                <LinearProgressBar value={timerPercent} className={styles.progressBar} height={theme.spacing(2)} />
+                <LinearProgressBar value={timerPercent} height={theme.spacing(2)} />
             </IconWithContext>
         </Box>
     );

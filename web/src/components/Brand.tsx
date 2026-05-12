@@ -1,9 +1,8 @@
-import React, { Fragment } from "react";
+import { Fragment } from "react";
 
-import { Divider, Link, Theme } from "@mui/material";
+import { Divider, Link } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import Grid from "@mui/material/Grid2";
-import makeStyles from "@mui/styles/makeStyles";
+import Grid from "@mui/material/Grid";
 import { useTranslation } from "react-i18next";
 
 import PrivacyPolicyLink from "@components/PrivacyPolicyLink";
@@ -12,41 +11,33 @@ import { getPrivacyPolicyEnabled } from "@utils/Configuration";
 
 export interface Props {}
 
-const Brand = function (props: Props) {
+const Brand = function () {
     const { t: translate } = useTranslation();
 
-    const styles = useStyles();
     const privacyEnabled = getPrivacyPolicyEnabled();
 
     return (
         <Grid container size={{ xs: 12 }} alignItems="center" justifyContent="center">
             <Grid size={{ xs: 4 }}>
                 <Link
-                    href={atob(String.fromCharCode(...EncodedURL))}
+                    href={atob(String.fromCodePoint(...EncodedURL))}
                     target="_blank"
                     underline="hover"
-                    className={styles.links}
+                    sx={{ color: grey[500], fontSize: "0.7rem" }}
                 >
-                    {translate("Powered by {{authelia}}", { authelia: atob(String.fromCharCode(...EncodedName)) })}
+                    {translate("Powered by {{authelia}}", { authelia: atob(String.fromCodePoint(...EncodedName)) })}
                 </Link>
             </Grid>
             {privacyEnabled ? (
                 <Fragment>
                     <Divider orientation="vertical" flexItem variant="middle" />
                     <Grid size={{ xs: 4 }}>
-                        <PrivacyPolicyLink className={styles.links} />
+                        <PrivacyPolicyLink sx={{ color: grey[500], fontSize: "0.7rem" }} />
                     </Grid>
                 </Fragment>
             ) : null}
         </Grid>
     );
 };
-
-const useStyles = makeStyles((theme: Theme) => ({
-    links: {
-        fontSize: "0.7rem",
-        color: grey[500],
-    },
-}));
 
 export default Brand;

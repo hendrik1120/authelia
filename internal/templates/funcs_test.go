@@ -1187,7 +1187,7 @@ func TestYAML(t *testing.T) {
 
 	actual, err := FuncFromYAML(data)
 
-	assert.EqualError(t, err, "yaml: unmarshal errors:\n  line 1: cannot unmarshal !!str `this is...` into map[string]interface {}")
+	assert.EqualError(t, err, "yaml: construct errors:\n  line 1: cannot construct !!str `this is...` into map[string]interface {}")
 	assert.Nil(t, actual)
 }
 
@@ -1229,6 +1229,51 @@ func TestFuncStringJoinX(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expected, FuncStringJoinX(tc.elems, tc.sep, tc.n, tc.p))
+		})
+	}
+}
+
+func TestURLQueryArg(t *testing.T) {
+	testCases := []struct {
+		name     string
+		have     string
+		key      string
+		expected string
+		error    string
+	}{
+		{
+			"ShouldHandleHappyPath",
+			"https://example.com/?abc=123",
+			"abc",
+			"123",
+			"",
+		},
+		{
+			"ShouldHandleHappyPathWrongKey",
+			"https://example.com/?abc=123",
+			"abc2",
+			"",
+			"",
+		},
+		{
+			"ShouldHandleUnhappyPath",
+			"://example.com/?abc=123",
+			"",
+			"",
+			`parse "://example.com/?abc=123": missing protocol scheme`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := FuncURLQueryArg(tc.have, tc.key)
+			if tc.error == "" {
+				assert.Equal(t, tc.expected, actual)
+				assert.NoError(t, err)
+			} else {
+				assert.Equal(t, tc.expected, actual)
+				assert.EqualError(t, err, tc.error)
+			}
 		})
 	}
 }

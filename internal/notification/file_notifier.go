@@ -13,7 +13,7 @@ import (
 	"github.com/authelia/authelia/v4/internal/templates"
 )
 
-// FileNotifier a notifier to send emails to SMTP servers.
+// FileNotifier a notifier to write notifications to a file.
 type FileNotifier struct {
 	path   string
 	append bool
@@ -29,9 +29,9 @@ func NewFileNotifier(configuration schema.NotifierFileSystem) *FileNotifier {
 // StartupCheck implements the startup check provider interface.
 func (n *FileNotifier) StartupCheck() (err error) {
 	dir := filepath.Dir(n.path)
-	if _, err := os.Stat(dir); err != nil {
+	if _, err = os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			if err = os.MkdirAll(dir, fileNotifierMode); err != nil {
+			if err = os.MkdirAll(dir, fileNotifierDirMode); err != nil {
 				return err
 			}
 		} else {
@@ -67,7 +67,7 @@ func (n *FileNotifier) Send(_ context.Context, recipient mail.Address, subject s
 
 	w := bufio.NewWriter(f)
 
-	if _, err = w.WriteString(fmt.Sprintf(fileNotifierHeader, time.Now(), recipient, subject)); err != nil {
+	if _, err = fmt.Fprintf(w, fileNotifierHeader, time.Now(), recipient, subject); err != nil {
 		return fmt.Errorf("failed to write to the buffer: %w", err)
 	}
 

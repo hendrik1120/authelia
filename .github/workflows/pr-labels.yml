@@ -1,0 +1,115 @@
+---
+name: PR Labels
+
+on:
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label:
+    name: Apply Labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450  # v2.19.1
+        with:
+          egress-policy: audit
+
+      - name: Parse PR title and apply labels
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9
+        with:
+          # yamllint disable rule:indentation
+          script: |
+            const title = context.payload.pull_request.title;
+            const re = /^(build|ci|docs|feat|fix|i18n|perf|refactor|release|revert|test)(\(([a-z0-9-]+)\))?!?: /;
+            const match = title.match(re);
+
+            if (!match) {
+              core.setFailed(`PR title does not follow Conventional Commits: ${title}`);
+              return;
+            }
+
+            const typeLabelMap = {
+              feat:     'type/feature',
+              fix:      'type/bug',
+              perf:     'type/performance',
+              refactor: 'type/refactor',
+              docs:     'type/docs',
+              i18n:     'type/i18n',
+              build:    'type/build',
+              ci:       'type/ci',
+              test:     'type/test',
+              release:  'type/release',
+              revert:   'type/revert',
+            };
+
+            const scopeLabelMap = {
+              api:            'area/server',
+              authentication: 'area/identity',
+              authorization:  'area/authorization',
+              buildkite:      'area/buildkite',
+              cmd:            'area/cli',
+              commands:       'area/cli',
+              configuration:  'area/config',
+              duo:            'area/duo',
+              expression:     'area/expression',
+              handlers:       'area/server',
+              logging:        'area/logs',
+              metrics:        'area/metrics',
+              middlewares:    'area/server',
+              notification:   'area/email',
+              ntp:            'area/ntp',
+              oidc:           'area/openid-connect',
+              regulation:     'area/regulation',
+              server:         'area/server',
+              service:        'area/service',
+              session:        'area/session',
+              storage:        'area/storage',
+              suites:         'area/suites',
+              totp:           'area/totp',
+              utils:          'area/utils',
+              web:            'area/ui',
+              webauthn:       'area/webauthn',
+            };
+
+            const typeLabel = typeLabelMap[match[1]];
+            const scopeLabel = match[3] ? scopeLabelMap[match[3]] : undefined;
+            const desired = new Set([typeLabel, scopeLabel].filter(Boolean));
+
+            const existing = context.payload.pull_request.labels.map((l) => l.name);
+
+            for (const name of existing) {
+              if ((name.startsWith('type/') || name.startsWith('area/')) && !desired.has(name)) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name,
+                });
+              }
+            }
+
+            const toAdd = [...desired].filter((name) => !existing.includes(name));
+
+            if (context.payload.action === 'opened' && !existing.includes('status/needs-review')) {
+              toAdd.push('status/needs-review');
+            }
+
+            if (toAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: toAdd,
+              });
+            }
+          # yamllint enable rule:indentation
+...

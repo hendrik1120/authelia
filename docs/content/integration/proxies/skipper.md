@@ -2,7 +2,7 @@
 title: "Skipper"
 description: "An integration guide for Authelia and the Skipper reverse proxy"
 summary: "A guide on integrating Authelia with the Skipper reverse proxy."
-date: 2022-06-15T17:51:47+10:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 360
@@ -36,7 +36,13 @@ It's __*strongly recommended*__ that users setting up *Authelia* for the first t
 [Get started](../prologue/get-started.md) guide. This takes you through various steps which are essential to
 bootstrapping *Authelia*.
 
-## Trusted Proxies
+## Trusted Proxies and Integration Security
+
+{{< callout context="danger" title="Security Note" icon="outline/alert-octagon" >}}
+In addition to this section which is important to read, you should read the
+[Validating Forwarded Authentication](../../reference/guides/validating-forwarded-authentication.md) reference guide
+and perform the validation steps as part of your regular security validation routine when using this integration.
+{{< /callout >}}
 
 *__Important:__ You should read the [Forwarded Headers] section and this section as part of any proxy configuration.
 Especially if you have never read it before.*

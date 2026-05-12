@@ -1,4 +1,6 @@
-import React, { Fragment, ReactNode } from "react";
+import { Fragment, ReactNode } from "react";
+
+import { Box } from "@mui/material";
 
 import LoadingPage from "@views/LoadingPage/LoadingPage";
 
@@ -11,9 +13,9 @@ export interface Props {
 const ComponentOrLoading = function (props: Props) {
     return (
         <Fragment>
-            <div className={props.ready ? "hidden" : ""}>
+            <Box className={props.ready ? "hidden" : ""}>
                 <LoadingPage />
-            </div>
+            </Box>
             {props.ready ? props.children : null}
         </Fragment>
     );

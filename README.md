@@ -3,7 +3,10 @@
 </p>
 
   [![Build](https://img.shields.io/buildkite/d6543d3ece3433f46dbe5fd9fcfaf1f68a6dbc48eb1048bc22/master?logo=buildkite&style=flat-square&color=brightgreen)](https://buildkite.com/authelia/authelia)
-  [![OpenSSF Best Practices](https://img.shields.io/static/v1?label=openssf%20best%20practices&logo=data:image/png;base64,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&message=passing&style=flat-square&color=brightgreen)](https://bestpractices.coreinfrastructure.org/projects/7128)
+  [![Codecov](https://img.shields.io/codecov/c/github/authelia/authelia?style=flat-square&logo=codecov)](https://codecov.io/gh/authelia/authelia)
+  [![OpenSSF Best Practices](https://img.shields.io/static/v1?label=openssf%20best%20practices&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEYAAABGCAYAAABxLuKEAAAK/UlEQVR4nOxcD2wb1Rn/pXE5lxRfYQPiLXdsA48/SSG+eRPBKYg/ZeIqGIwyTWWAkKPWhYxIgw2GNhXB0JiAsdCMHRBro5rKAG3TgFwZdGv542UF75xhWmkYunFnuPBv41wDZ2q300veZW7+2e98l6rSflKaq+Pve19++d73vu997zmwf/9+/B8zESD/tLS0HJTB+XjicACfBXAMgMX0ZQvAW7auvVs2svsOimGEE+IxfhPDCdGjAJwTFKXlAE4E8HkAHQDaASyaQ6wM4F/063Vb13YBGKtY5o5qcbziq8F+E8PHE6cCuBnAJQAO80jtbgB32bq2qWxkP/RI5wx4TgwnRI8O8OFkgA9fBKDbma4+4F0AWyuW+Ttb135fLY5XvVTuGTFtXfLKAB9eC+AC8l9PrGsc/wCwyda1h8pG9k0vFHpCDB9PrAOgeGFQk3jH1rVY2cgazSpqipi2Lvn0AB++BcB5AFqbNcYjvAXg3lJuRKkWxy23SlwRwwnR44OidDuAS32MIc2CrGYbSrmRzW5WMWZiOCF6WFCUXgEQYR3sIOFWK53awCo0Vw4xKzghuiwoSo8dQqQQfL+tS76SVahhjyFJWlCUXqaZ6qEGspT3WOnUS40KNOQxnBBtC4rSrw9RUgh+YetahkWgbuBs65K7Anx4C03hvQCpf3QAxPt22rpG8o4igI/pHyoE4NNBUSLjfQnAaQCWNDHeUCk38u1qcZxJqC4xAT58j0ek7AXwWwC3WenUrnpvLhvZie98PEHIuprIAQgzjrnZ1rXrWElBvRjT1iVfGODDjzNrPRAmzUo3Ts9KO+TkkZT0ZQAOp7GAeM/bxXzGLOYznzjv5YQoMfLMoCjdSLPrehgipJSNrKt9lXmJ4eOJHIAuN4opSFy6ykqnprYPOuTkEkFOriavAzh3HtmPSGwAcP9of3d+ml1xAI/N40HEU77llhTMRUxrqL116fJV9wNIuNQ7ZuvahoplqiS5CkVirR1ycjUfiV0G4CwSQxj1kXmlGqrym4KqkByKeJAQFKUbqI21tVlTnuJgVmLauuRrA3x4yKXOzaXcSKJaHLdDkdgRnQPDawD0N+l5Dsgvu8lQlbscguji8CSA49wG2tkwKzF8PEGC48ku9D1q69qaspGt9gyNEaVP0zrKD1wx2t9NpirxntODotRv69oVzXqKgxnE0EFGXegatnVtLTHslIHhs/hI7AEAX/TCyDlAlvf7dg723VbMZ1wXi3NhRoJHoz4r/lzKjaynpKzkI7EtPpMCmttc3zkwvN4P5QfkMXw8QZbNVaxKbF27ngTZnqExEgQfajIhY8EThqrc6Yfi6R5zR81ufSMg5fy6spEd65CTpFx40UUS5hYPGqpySUFVPN3SdDBFDCdESbK1jlF+m5VOkVgCQU6SpfMUzy2cHcRT1vtFCqZ5TC+rcMUyJ0gJRWIkL2Eu7V3CV09xMBVjgqIkM8qqtq6R2gedA8M3AzjKc+tm4sGdg33rivmM7+3T2uAbZZQlxZlj4DebsOE1AI8AIOUHB+BCumU6vU6ZmD4LQQocYjgh2grgJAa5rJVOvU4eeobG1rkMuC8YqnJDQVV2THt9U4ec5EOR2Df4SOzHAD5Fp4+vMWU6JmJMUJQ6yWrNIPc8JgvCFrodwIqnDFU5t5YUPp5YTP9AKKiKtWuw70EAly1EoJ0NzlQ6k0XI1rUcfSSEHs045qOGqqwhv2hbl9wb4MPraeAXg6K0NyhKGQB/KOVGhkf7u7d1yMntBVVZ8CMZDjHzlf+z4UX6nXUle5UGT0LK6gAffnhanCM5VA/5Wrp8VV8pN3JGQVXeZRzDEzjLNWv6XsBk7nIco9y1xXzmA0zuDN5VZwfxhKXLV13LqN8zOMSwbHLvrVjmf+hzO4OcaajKnzAZT9bTbYJ6WM2g31M4xLAE3j01yzSL3K6aWNFoodrJxxOfYxjDMzA13ChqVweWfvXemmcWQlne6xkcYliOdNVWzmUGudrM+G8Nyti2rr3OMIZncIh5n0FmCd2xB93RbxQn1jxvbFBmrGxkSwxjeAaHGJbzJGT6HEserHymwCDH9wyNXYPJPOhxJ0mcDxXLHGbQ7ykcYv7KKDexvVDMZ/7OKLfxlIHhFWUju7+UGyErzly95AqAH9m6lmLU7xkcYhpudlM4O/6sxCziI7GfkodqcfwdW9dW0BXKrHnPUySvstKpH3qx2+8WE5vhy3r7yJL4Twa5X1np1NWhSGxR58AwqXdijOPusPKZ/l2DfRON9tZQeyDAh0lw3ls2shM5UigSa+mQkzfykdjFhqpcXlCVBQ3CU10CPp4Yd2JHA9htpVPHY7K6vgCA6mJssqJdNNrf/fT0H/QMjS2mXUin4ffCaH/3ChdjuEYtMSQrPYdB9nwrnXqmQ04uEuTkGIDlLsYnaUIewE4Ab9PATlavL9Nedi1e2DnYd1Uxn9ntYhxmTCV4Fcvcyij7CCdEjymoyj4rn7m9ifEJEV8HQMqEtbSFO50Ugt7OgeFtoUjsCy7HYjZsAhXLZF2ZjgyK0qWYXJ0eBbAQkVLsHBh+aAHGOYCYFwG8xyif5IQoR2ogK5/5iffmzYrenqGx5/32nCliqsXxDwHczSh/alCU7sGk12x0kQ+5Ra/fnnNAEWnr2s9pEGTB+rYu+eKCqlQNVTkfwLPemjgnfPWcA4gpG9k9Fcu8j1VJgA//sq1LPrmgKnt2DvZdSFYQT62cG2d0yElfTlPM2HaoWOZmF3qWBfjwRPOtmM/sMVSFkFP3nF2TsAHIuwb7HvBD+Qxiykb2NQDbXejq5eOJ5zkhGimoygeGqkStfOYWAF7fKSK5z3NWPvPV0f7uP2Ly8FCSjye2t4baPZtWsx4c4oRolJ6R4VzofK9imWs+fEV9BpMtFi4Uia3lI7GbAHymSXu3G6pyk9N24YTokqAo3QbgevpzvZQbObNaHH+jyXHmPpzIxxPXARh0qbcK4CZb1+52Tjh1yMkjBDlJCsZrSA7EqO8vAAZG+7unDjFzQvSEoCg9OwvZW610aqVLu6cwJzGcEG0JitKTZB43of9ZW9furVjmlmpx/GNMEhQC8JVQJNbNR2LStOOs++hl0XcAvGGoCiHkpWI+86rTmqWEJOjZ37lqu630HKDu1vB5j7NyQpTkKaxbC7MhZ+uaXDayLBtbM8DHE5cB2AQg2MDbm/Kcupcs+HjiflrDNIuPAOyoWOa2imVqAF6e7yYa3Yo4DcBpQVE6gzYFWTsGrj2nLjGtofbFS5ev2gDge4ynrRpBEcCbAPZQ4kh1vZS2fY/1aLzdpdzI2azkNHwth48nhgActM5gk2CeVg33lUq5kR/QC6G+Xwb3ASInRJkuijBf/ePjCVJofseNdQcJVXqzdoxFiLkTWcqN3AzATdlwMDCRbLKSAre3aFtD7aRwXBEUpTtIIcc66ALgk4pl3lmxzFvLRvYTNwqaunfNCVEuKEokKPe5UuAPyOpznpVO5ZtR4slN/bYu+fwAH/6Zy4sZXoFkzQ/buvbdspE1m1Xm2Wc70ISsNyhKVwK43MNP/6iHQsUy765Y5qaykf23V0p9+ZgUPp6I0gLUz17Q+wDuJLVY2ch+7LVyXz8/hhOiJwE4m6b0KxkaerOhSs8CP2Xr2nMVy0xXi+Mspy2YsCCfOIT/VeudAL5G654YgCPqiL1GT0VsAfCElU7ZvhtKsWDETEdrqL0lwIePpSemDqebYvvoBa0SmSplI+ubR9TDfwMAAP//J8ZWGNO8y2EAAAAASUVORK5CYII=&message=silver&style=flat-square&color=silver)](https://bestpractices.coreinfrastructure.org/projects/7128)
+  [![OpenSSF Scorecard](https://img.shields.io/ossf-scorecard/github.com/authelia/authelia?label=openssf+scorecard&style=flat-square&color=brightgreen)](https://scorecard.dev/viewer/?uri=github.com/authelia/authelia)
+  [![SLSA 3](https://img.shields.io/badge/slsa-level_3-brightgreen?style=flat-square&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBmaWxsPSJub25lIiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxNDAgMTQwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMzEpIiBjbGlwLXBhdGg9InVybCgjYSkiPgo8cGF0aCBkPSJtMTYxLjUzIDMuMDk5NGUtNSAwLjM4NS0wLjQzNTQzLTcuNDkzLTYuNjIyMi0zLjMxMSAzLjc0NjVjLTAuOTg5IDEuMTE4NC0xLjk5MSAyLjIyMjItMy4wMDggMy4zMTExaC0xMTcuMXY3Ljc5MTlsLTYuODc5OSA0LjI0MDMgMi42MjM0IDQuMjU2NWMxLjM3MzUgMi4yMjg1IDIuNzkyOSA0LjQxOTYgNC4yNTY1IDYuNTcyNHY5My40MjFjLTAuMDMzOSAxZS0zIC0wLjA2NzggMWUtMyAtMC4xMDE4IDJlLTNsLTQuOTk4OSAwLjEwMiAwLjIwMzUgOS45OTggNC44OTcyLTAuMXYxMy43MTZoMTQwdi04OC42ODRjMS40NC0yLjA3MzQgMi44NC00LjE4MyA0LjE5Ni02LjMyODIgMi4yNzktMy40MjkyIDMuOTcxLTYuMzYxMyA1LjEwMy04LjQ1NzkgMC41Ny0xLjA1NCAwLjk5OC0xLjg5ODYgMS4yOS0yLjQ5MTIgMC4xNDYtMC4yOTY0IDAuMjU4LTAuNTI5OSAwLjMzNi0wLjY5NTMgMC4wMzktMC4wODI3IDAuMDY5LTAuMTQ4NCAwLjA5MS0wLjE5NjRsMC4wMjctMC4wNTg3IDllLTMgLTAuMDE5MiAzZS0zIC0wLjAwNzEgMWUtMyAtMC4wMDI5IDFlLTMgLTAuMDAxM2MwLTZlLTQgMC0wLjAwMTEtNC41NTctMi4wNTc4bDQuNTU3IDIuMDU2NyAyLjA1Ny00LjU1NzUtOS4xMTUtNC4xMTMyLTIuMDU0IDQuNTUxOHYxZS0zbC0xZS0zIDllLTQgLTFlLTMgMC4wMDE3djJlLTNsLThlLTMgMC4wMTc0Yy0wLjAxMSAwLjAyMzQtMC4wMyAwLjA2NDItMC4wNTcgMC4xMjE2LTAuMDU0IDAuMTE1LTAuMTQxIDAuMjk2Ny0wLjI2MSAwLjUzOTktMC4yMzkgMC40ODY2LTAuNjExIDEuMjE4OC0xLjExNiAyLjE1NS0wLjE1NSAwLjI4NTktMC4zMjIgMC41OTA3LTAuNTAxIDAuOTEzMXYtMzIuNjl6bTAgMGgtMTMuNDI3Yy0yMi4wNDYgMjMuNjE4LTUwLjU5MSA0MC4yNDYtODEuOTkxIDQ3Ljc3OS0xMS44NzUtMTAuNTQxLTIyLjMwNS0yMi44NzEtMzAuODUxLTM2LjczN2wtMi42MjM0LTQuMjU2NS0xLjYzMzEgMS4wMDY1djE1LjA2OWM4LjcwNzYgMTIuODA3IDE4Ljk4MiAyNC4yNTkgMzAuNDgyIDM0LjE1NiAxNi41MyAxNC4yMjYgMzUuNTkxIDI1LjI0MiA1Ni4xNyAzMi40NjEtMTcuNDI0IDExLjM4Ny0zNi45NjIgMTkuNDQ4LTU3LjYxMiAyMy42MDUtOS40Nzc0IDEuOTA3LTE5LjE5IDIuOTkyLTI5LjA0IDMuMTk5djEwLjAwMmwwLjEwMTgtMmUtM2MxMC40ODQtMC4yMTMgMjAuODIzLTEuMzY1IDMwLjkxMS0zLjM5NiAyNS40MDMtNS4xMTMgNDkuMjE3LTE1Ljc5NiA2OS43ODYtMzEuMDkgMTUuMDEtMTEuMTYxIDI4LjI5Mi0yNC43NzkgMzkuMjAxLTQwLjQ4di0xOC42MjZjLTAuOTk2IDEuNzkwOC0yLjM4IDQuMTI3LTQuMTYzIDYuODA4bC0wLjAzMyAwLjA0OTEtMC4wMzEgMC4wNDk4Yy0xMC41MTIgMTYuNjM5LTIzLjc1OSAzMS4wMTUtMzguOTYyIDQyLjY4LTE4Ljg4MS01LjcwOS0zNi41NTUtMTQuNzU4LTUyLjE4LTI2LjY2MiAzMS45ODItOS4xMjkyIDYwLjgyNy0yNy4yNSA4Mi45NjktNTIuMzA0eiIgY2xpcC1ydWxlPSJldmVub2RkIiBmaWxsPSIjZjAzMTAwIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz4KPC9nPgo8ZGVmcz4KPGNsaXBQYXRoIGlkPSJhIj4KPHBhdGggZD0ibTMxIDI4YzAtMTUuNDY0IDEyLjUzNi0yOCAyOC0yOGg4NGMxNS40NjQgMCAyOCAxMi41MzYgMjggMjh2ODRjMCAxNS40NjQtMTIuNTM2IDI4LTI4IDI4aC04NGMtMTUuNDY0IDAtMjgtMTIuNTM2LTI4LTI4eiIgZmlsbD0iI2ZmZiIvPgo8L2NsaXBQYXRoPgo8L2RlZnM%2BCjwvc3ZnPgo%3D)](https://slsa.dev)
   [![Go Report Card](https://goreportcard.com/badge/github.com/authelia/authelia/v4?logo=go&style=flat-square)](https://goreportcard.com/report/github.com/authelia/authelia/v4)
   [![GitHub Release](https://img.shields.io/github/release/authelia/authelia.svg?logo=github&style=flat-square&color=blue)](https://github.com/authelia/authelia/releases)
   [![Docker Tag](https://img.shields.io/docker/v/authelia/authelia/latest?logo=docker&style=flat-square&color=blue&sort=semver)](https://hub.docker.com/r/authelia/authelia/tags)
@@ -47,14 +50,23 @@ and ingress configurations.
 Here is what Authelia's portal looks like:
 
 <p align="center">
-  <img src="https://www.authelia.com/images/1FA.png" width="400" />
-  <img src="https://www.authelia.com/images/2FA-METHODS.png" width="400" />
+    <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://www.authelia.com/images/dark.png" width="400">
+    <source media="(prefers-color-scheme: light)" srcset="https://www.authelia.com/images/light.png" width="400">
+    <img src="https://www.authelia.com/images/light.png" width="400">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://www.authelia.com/images/2fa-methods-dark.png" width="400">
+    <source media="(prefers-color-scheme: light)" srcset="https://www.authelia.com/images/2fa-methods-light.png" width="400">
+    <img src="https://www.authelia.com/images/2fa-methods-light.png" width="400">
+  </picture>
 </p>
 
 ## Features summary
 
 This is a list of the key features of Authelia:
 
+* [OpenID Connect 1.0 / OAuth 2.0](#openid-connect-10--oauth-20)
 * Several second factor methods:
   * **[Security Keys](https://www.authelia.com/overview/authentication/security-key/)** that support
     [FIDO2]&nbsp;[WebAuthn] with devices like a [YubiKey].
@@ -62,6 +74,7 @@ This is a list of the key features of Authelia:
     with compatible authenticator applications.
   * **[Mobile Push Notifications](https://www.authelia.com/overview/authentication/push-notification/)**
     with [Duo](https://duo.com/).
+* Passwordless Authentication via WebAuthn (Passkeys)
 * Password reset with identity verification using email confirmation.
 * Access restriction after too many invalid authentication attempts.
 * Fine-grained access control using rules which match criteria like subdomain, user, user group membership, request uri,
@@ -77,17 +90,34 @@ This is a list of the key features of Authelia:
 * Compatible with [Caddy] using the [forward_auth](https://caddyserver.com/docs/caddyfile/directives/forward_auth)
   directive.
 * Kubernetes Support:
-  * Compatible with several Kubernetes ingress controllers:
+  * Compatible with several Kubernetes Ingress Controllers and Gateways:
     * [ingress-nginx](https://www.authelia.com/integration/kubernetes/nginx-ingress/)
     * [Traefik Kubernetes CRD](https://www.authelia.com/integration/kubernetes/traefik-ingress/#ingressroute)
     * [Traefik Kubernetes Ingress](https://www.authelia.com/integration/kubernetes/traefik-ingress/#ingress)
-    * [Istio](https://www.authelia.com/integration/kubernetes/istio/)
+    * [Istio](https://www.authelia.com/integration/kubernetes/envoy/introduction/)
+    * [Envoy Gateway](https://www.authelia.com/integration/kubernetes/envoy/gateway/)
   * Beta support for installing via Helm using our [Charts](https://charts.authelia.com).
-* Beta support for [OAuth 2.0 and OpenID Connect 1.0](https://www.authelia.com/roadmap/active/openid-connect/).
 
 For more details take a look at the [Overview](https://www.authelia.com/overview/prologue/introduction/).
 
 If you want to know more about the roadmap, follow [Roadmap](https://www.authelia.com/roadmap).
+
+### OpenID Connect 1.0 / OAuth 2.0
+
+Authelia is [OpenID Certified™] to the Basic OP / Implicit OP / Hybrid OP / Form Post OP / Config OP profiles of the
+[OpenID Connect™ protocol]. While this offering is still effectively
+[on the roadmap as a beta](https://www.authelia.com/roadmap/active/openid-connect/) it's very comprehensive and well
+implemented already, also allowing us comprehensive certification. Read more about the
+[OpenID Certified™] status of Authelia in the
+[OpenID Connect 1.0 Integration Guide](https://www.authelia.com/integration/openid-connect/introduction/#openid-certified).
+
+<p align="center">
+	<a href="https://www.authelia.com/integration/openid-connect/introduction/#openid-certified" target="_blank">
+		<picture>
+			<img src="https://www.authelia.com/images/oid-certification.jpg" width="400" title="OpenID Certified™ by Authelia to the Basic OP / Implicit OP / Hybrid OP / Form Post OP / Config OP of the OpenID Connect™ protocol">
+		</picture>
+	</a>
+</p>
 
 ## Proxy support
 
@@ -114,7 +144,7 @@ customize them to your needs as they come with self-signed certificates.
 #### [Local](https://www.authelia.com/integration/deployment/docker/#local)
 The Local compose bundle is intended to test Authelia without worrying about configuration.
 It's meant to be used for scenarios where the server is not be exposed to the internet.
-Domains will be defined in the local hosts file and self-signed certificates will be utilised.
+Domains will be defined in the local hosts file and self-signed certificates will be utilized.
 
 #### [Lite](https://www.authelia.com/integration/deployment/docker/#lite)
 The Lite compose bundle is intended for scenarios where the server will be exposed to the internet, domains and DNS will
@@ -331,6 +361,33 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
       <td align="center" valign="top" width="14.28%"><a href="http://shaamallow.com"><img src="https://avatars.githubusercontent.com/u/39766320?v=4?s=100" width="100px;" alt="Eyal Benaroche"/><br /><sub><b>Eyal Benaroche</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=Shaamallow" title="Documentation">📖</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://github.com/wangweixuan"><img src="https://avatars.githubusercontent.com/u/24620923?v=4?s=100" width="100px;" alt="Wang Weixuan"/><br /><sub><b>Wang Weixuan</b></sub></a><br /><a href="https://github.com/authelia/authelia/issues?q=author%3Awangweixuan" title="Bug reports">🐛</a> <a href="https://github.com/authelia/authelia/commits?author=wangweixuan" title="Code">💻</a> <a href="https://github.com/authelia/authelia/commits?author=wangweixuan" title="Tests">⚠️</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://t.me/daniw1337"><img src="https://avatars.githubusercontent.com/u/21097466?v=4?s=100" width="100px;" alt="Dani"/><br /><sub><b>Dani</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=DaniW42" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://lhns.de"><img src="https://avatars.githubusercontent.com/u/1524059?v=4?s=100" width="100px;" alt="Pierre Kisters"/><br /><sub><b>Pierre Kisters</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=lhns" title="Code">💻</a> <a href="https://github.com/authelia/authelia/issues?q=author%3Alhns" title="Bug reports">🐛</a> <a href="https://github.com/authelia/authelia/commits?author=lhns" title="Tests">⚠️</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="http://auston.dev"><img src="https://avatars.githubusercontent.com/u/5049050?v=4?s=100" width="100px;" alt="Auston Pramodh Barboza"/><br /><sub><b>Auston Pramodh Barboza</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=austonpramodh" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/ThomasSteinbach"><img src="https://avatars.githubusercontent.com/u/1683246?v=4?s=100" width="100px;" alt="Thomas Steinbach"/><br /><sub><b>Thomas Steinbach</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=ThomasSteinbach" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Steve-Brule"><img src="https://avatars.githubusercontent.com/u/83868338?v=4?s=100" width="100px;" alt="Steve-Brule"/><br /><sub><b>Steve-Brule</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=Steve-Brule" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/peter-"><img src="https://avatars.githubusercontent.com/u/4047365?v=4?s=100" width="100px;" alt="peter"/><br /><sub><b>peter</b></sub></a><br /><a href="https://github.com/authelia/authelia/issues?q=author%3Apeter-" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://ocnr.org"><img src="https://avatars.githubusercontent.com/u/1495157?v=4?s=100" width="100px;" alt="Nick O'Connor"/><br /><sub><b>Nick O'Connor</b></sub></a><br /><a href="https://github.com/authelia/authelia/issues?q=author%3Anick-oconnor" title="Bug reports">🐛</a> <a href="#userTesting-nick-oconnor" title="User Testing">📓</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/pedorich-n"><img src="https://avatars.githubusercontent.com/u/15573098?v=4?s=100" width="100px;" alt="Nikita Pedorich"/><br /><sub><b>Nikita Pedorich</b></sub></a><br /><a href="#userTesting-pedorich-n" title="User Testing">📓</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/atoerien"><img src="https://avatars.githubusercontent.com/u/49614525?v=4?s=100" width="100px;" alt="Andre Toerien"/><br /><sub><b>Andre Toerien</b></sub></a><br /><a href="https://github.com/authelia/authelia/issues?q=author%3Aatoerien" title="Bug reports">🐛</a> <a href="https://github.com/authelia/authelia/commits?author=atoerien" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/erusc"><img src="https://avatars.githubusercontent.com/u/208130995?v=4?s=100" width="100px;" alt="erusc"/><br /><sub><b>erusc</b></sub></a><br /><a href="https://github.com/authelia/authelia/issues?q=author%3Aerusc" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://kevincox.ca"><img src="https://avatars.githubusercontent.com/u/494012?v=4?s=100" width="100px;" alt="Kevin Cox"/><br /><sub><b>Kevin Cox</b></sub></a><br /><a href="https://github.com/authelia/authelia/issues?q=author%3Akevincox" title="Bug reports">🐛</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/tkf144"><img src="https://avatars.githubusercontent.com/u/17581159?v=4?s=100" width="100px;" alt="Tom"/><br /><sub><b>Tom</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=tkf144" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="http://shiziblog.cn"><img src="https://avatars.githubusercontent.com/u/29810238?v=4?s=100" width="100px;" alt="Br1an"/><br /><sub><b>Br1an</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=Br1an67" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/andreasbrett"><img src="https://avatars.githubusercontent.com/u/6610451?v=4?s=100" width="100px;" alt="Andreas Brett"/><br /><sub><b>Andreas Brett</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=andreasbrett" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/FlorianObermayer"><img src="https://avatars.githubusercontent.com/u/4497761?v=4?s=100" width="100px;" alt="FO"/><br /><sub><b>FO</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=FlorianObermayer" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/x0k"><img src="https://avatars.githubusercontent.com/u/23502797?v=4?s=100" width="100px;" alt="Roman Krasilnikov"/><br /><sub><b>Roman Krasilnikov</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=x0k" title="Documentation">📖</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/tomaszduda23"><img src="https://avatars.githubusercontent.com/u/35012788?v=4?s=100" width="100px;" alt="tomaszduda23"/><br /><sub><b>tomaszduda23</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=tomaszduda23" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://louisonsarlinmagnus.github.io/"><img src="https://avatars.githubusercontent.com/u/70757160?v=4?s=100" width="100px;" alt="Louison SARLIN--MAGNUS"/><br /><sub><b>Louison SARLIN--MAGNUS</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=louisonsarlinmagnus" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/AlexViridi"><img src="https://avatars.githubusercontent.com/u/80551059?v=4?s=100" width="100px;" alt="AlexViridi"/><br /><sub><b>AlexViridi</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=AlexViridi" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/xaabi6"><img src="https://avatars.githubusercontent.com/u/22637294?v=4?s=100" width="100px;" alt="Xabi"/><br /><sub><b>Xabi</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=xaabi6" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://caiocdcs.github.io"><img src="https://avatars.githubusercontent.com/u/8338516?v=4?s=100" width="100px;" alt="Caio Silva"/><br /><sub><b>Caio Silva</b></sub></a><br /><a href="https://github.com/authelia/authelia/commits?author=caiocdcs" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/deprrous"><img src="https://avatars.githubusercontent.com/u/144512455?v=4?s=100" width="100px;" alt="deprrous"/><br /><sub><b>deprrous</b></sub></a><br /><a href="https://github.com/authelia/authelia/issues?q=author%3Adeprrous" title="Bug reports">🐛</a></td>
     </tr>
   </tbody>
 </table>
@@ -350,11 +407,6 @@ or other audits related to improving the security of Authelia.
 
 Any company can become a sponsor by donating or providing any benefit to the project or the team helping improve
 Authelia.
-
-#### Balto
-
-Thank you to [<img src="https://www.authelia.com/svgs/logos/balto.svg" alt="Balto" width="32"> Balto](https://www.getbalto.com/)
-for hosting our apt repository.
 
 #### JetBrains
 
@@ -380,7 +432,8 @@ which are both [Microsoft](https://www.microsoft.com/?from=Authelia) products.
 #### Backers
 
 Thank you to all our backers! 🙏 [Become a backer](https://opencollective.com/authelia-sponsors/contribute) and help us
-sustain our community. The money we currently receive is dedicated to bootstrap a bug bounty program to give us as many
+sustain our community. The money we currently receive is dedicated to fund a security audit, and potentially in the
+future introducing a bug bounty program to give us as many
 eyes as we can to detect potential vulnerabilities.
 <a href="https://opencollective.com/authelia-sponsors#backers"><img src="https://opencollective.com/authelia-sponsors/backers.svg?width=890"></a>
 
@@ -426,3 +479,5 @@ Companies contributing to Authelia via Open Collective will have a special menti
 [security]: https://github.com/authelia/authelia/security/policy
 [#support]: https://discord.com/channels/707844280412012608/707844280412012612
 [#contributing]: https://discord.com/channels/707844280412012608/804943261265297408
+[OpenID Certified™]: https://openid.net/certification/
+[OpenID Connect™ protocol]: https://openid.net/developers/how-connect-works/

@@ -94,6 +94,22 @@ func TestShouldSetDefaultConfigRateLimits(t *testing.T) {
 						{Period: schema.DefaultIdentityValidation.ElevatedSession.ElevationLifespan * 6, Requests: 15},
 					},
 				},
+				OpenIDConnectToken: schema.ServerEndpointRateLimit{
+					Buckets: []schema.ServerEndpointRateLimitBucket{
+						{Period: 1 * time.Minute, Requests: 30},
+						{Period: 2 * time.Minute, Requests: 40},
+						{Period: 10 * time.Minute, Requests: 50},
+						{Period: time.Hour, Requests: 100},
+					},
+				},
+				OpenIDConnectPushedAuthorizationRequest: schema.ServerEndpointRateLimit{
+					Buckets: []schema.ServerEndpointRateLimitBucket{
+						{Period: 1 * time.Minute, Requests: 30},
+						{Period: 2 * time.Minute, Requests: 40},
+						{Period: 10 * time.Minute, Requests: 50},
+						{Period: time.Hour, Requests: 100},
+					},
+				},
 			},
 		},
 	}
@@ -108,6 +124,8 @@ func TestShouldSetDefaultConfigRateLimits(t *testing.T) {
 			assert.Len(t, validator.Errors(), 0)
 			assert.Len(t, validator.Warnings(), 0)
 
+			assert.Equal(t, tc.expected.OpenIDConnectPushedAuthorizationRequest, tc.config.Server.Endpoints.RateLimits.OpenIDConnectPushedAuthorizationRequest)
+			assert.Equal(t, tc.expected.OpenIDConnectToken, tc.config.Server.Endpoints.RateLimits.OpenIDConnectToken)
 			assert.Equal(t, tc.expected.ResetPasswordStart, tc.config.Server.Endpoints.RateLimits.ResetPasswordStart)
 			assert.Equal(t, tc.expected.ResetPasswordFinish, tc.config.Server.Endpoints.RateLimits.ResetPasswordFinish)
 			assert.Equal(t, tc.expected.SecondFactorTOTP, tc.config.Server.Endpoints.RateLimits.SecondFactorTOTP)
@@ -185,7 +203,7 @@ func TestValidateSeverAddress(t *testing.T) {
 	require.Len(t, validator.Errors(), 1)
 	assert.Len(t, validator.Warnings(), 0)
 
-	assert.EqualError(t, validator.Errors()[0], "server: option 'address' must not have a path with a forward slash but it's configured as '/path/'")
+	assert.EqualError(t, validator.Errors()[0], "server: option 'address' must be a single subpath (i.e. '/path'), but '/path/' contains multiple segments")
 }
 
 func TestValidateServerShouldCorrectlyIdentifyValidAddressSchemes(t *testing.T) {
@@ -315,6 +333,57 @@ func TestShouldValidateAndUpdateAddress(t *testing.T) {
 
 	require.Len(t, validator.Errors(), 0)
 	assert.Equal(t, "tcp://:9091/", config.Server.Address.String())
+}
+
+func TestShouldDisableHealthcheckForUnixSocketAndFileDescriptor(t *testing.T) {
+	testCases := []struct {
+		name     string
+		address  *schema.AddressTCP
+		expected bool
+	}{
+		{
+			name:     "ShouldDisableHealthcheckForUnixSocket",
+			address:  &schema.AddressTCP{Address: schema.NewAddressUnix("/path/to/authelia.sock")},
+			expected: true,
+		},
+		{
+			name:     "ShouldDisableHealthcheckForFileDescriptor",
+			address:  &schema.AddressTCP{Address: MustParseAddress("fd://3")},
+			expected: true,
+		},
+		{
+			name:     "ShouldNotDisableHealthcheckForTCP",
+			address:  &schema.AddressTCP{Address: schema.NewAddressFromNetworkValues("tcp", "127.0.0.1", 9091)},
+			expected: false,
+		},
+		{
+			name:     "ShouldNotDisableHealthcheckForTCP4",
+			address:  &schema.AddressTCP{Address: schema.NewAddressFromNetworkValues("tcp4", "127.0.0.1", 9091)},
+			expected: false,
+		},
+		{
+			name:     "ShouldNotDisableHealthcheckForTCP6",
+			address:  &schema.AddressTCP{Address: schema.NewAddressFromNetworkValues("tcp6", "::1", 9091)},
+			expected: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			validator := schema.NewStructValidator()
+			config := &schema.Configuration{
+				Server: schema.Server{
+					Address:            tc.address,
+					DisableHealthcheck: false,
+				},
+			}
+
+			ValidateServerAddress(config, validator)
+
+			assert.Len(t, validator.Errors(), 0)
+			assert.Equal(t, tc.expected, config.Server.DisableHealthcheck)
+		})
+	}
 }
 
 func TestShouldRaiseErrorWhenTLSCertWithoutKeyIsProvided(t *testing.T) {
@@ -565,6 +634,13 @@ func TestServerAuthzEndpointErrors(t *testing.T) {
 			},
 		},
 		{
+			"ShouldNotErrorOnValidSchemeCase",
+			map[string]schema.ServerEndpointsAuthz{
+				"example": {Implementation: "ForwardAuth", AuthnStrategies: []schema.ServerEndpointsAuthzAuthnStrategy{{Name: "HeaderAuthorization", SchemeBasicCacheLifespan: time.Minute, Schemes: []string{"BASIC"}}}},
+			},
+			[]string{},
+		},
+		{
 			"ShouldErrorOnInvalidChars",
 			map[string]schema.ServerEndpointsAuthz{
 				"/abc":  {Implementation: "ForwardAuth"},
@@ -652,20 +728,45 @@ func TestServerAuthzEndpointDefaults(t *testing.T) {
 		{
 			"ShouldSetDefaultSchemes",
 			map[string]schema.ServerEndpointsAuthz{
-				"example": {Implementation: "ForwardAuth", AuthnStrategies: []schema.ServerEndpointsAuthzAuthnStrategy{
-					{
-						Name:    "HeaderAuthorization",
-						Schemes: []string{},
-					},
-				}},
+				"example": {
+					Implementation: "ForwardAuth",
+					AuthnStrategies: []schema.ServerEndpointsAuthzAuthnStrategy{
+						{
+							Name:    "HeaderAuthorization",
+							Schemes: []string{},
+						},
+					}},
 			},
 			map[string]schema.ServerEndpointsAuthz{
-				"example": {Implementation: "ForwardAuth", AuthnStrategies: []schema.ServerEndpointsAuthzAuthnStrategy{
-					{
-						Name:    "HeaderAuthorization",
-						Schemes: []string{"basic"},
-					},
-				}},
+				"example": {
+					Implementation: "ForwardAuth",
+					AuthnStrategies: []schema.ServerEndpointsAuthzAuthnStrategy{
+						{
+							Name:    "HeaderAuthorization",
+							Schemes: []string{"basic"},
+						},
+					}},
+			},
+		},
+		{
+			"ShouldSetDefaultStrategies",
+			map[string]schema.ServerEndpointsAuthz{
+				"example": {
+					Implementation: "ForwardAuth",
+				},
+			},
+			map[string]schema.ServerEndpointsAuthz{
+				"example": {
+					Implementation: "ForwardAuth",
+					AuthnStrategies: []schema.ServerEndpointsAuthzAuthnStrategy{
+						{
+							Name:    "HeaderAuthorization",
+							Schemes: []string{"basic"},
+						},
+						{
+							Name: "CookieSession",
+						},
+					}},
 			},
 		},
 	}
@@ -777,7 +878,7 @@ func TestValidateServerAssets(t *testing.T) {
 				return out
 			},
 			errors: []any{
-				regexp.MustCompile(`server: asset_path: error occurred reading the '[\w#/\\]+/locales' directory: open [\w#/\\]+locales: permission denied`),
+				regexp.MustCompile(`server: asset_path: error occurred reading the '[\w#/.\\-]+/locales' directory: open [\w#/.\\-]+locales: permission denied`),
 			},
 		},
 		{
@@ -791,7 +892,7 @@ func TestValidateServerAssets(t *testing.T) {
 				return out
 			},
 			errors: []any{
-				regexp.MustCompile(`server: asset_path: error occurred reading the '[\w#/\\]+/locales/en' directory: open [\w#/\\]+locales/en: permission denied`),
+				regexp.MustCompile(`server: asset_path: error occurred reading the '[\w#/.\\-]+/locales/en' directory: open [\w#/.\\-]+locales/en: permission denied`),
 			},
 		},
 		{
@@ -812,7 +913,7 @@ func TestValidateServerAssets(t *testing.T) {
 				return out
 			},
 			errors: []any{
-				regexp.MustCompile(`server: asset_path: error occurred reading the '[\w#/\\]+/locales/en/portal.json' file: open [\w#/\\]+locales/en/portal.json: permission denied`),
+				regexp.MustCompile(`server: asset_path: error occurred reading the '[\w#/.\\-]+/locales/en/portal.json' file: open [\w#/.\\-]+locales/en/portal.json: permission denied`),
 			},
 		},
 		{
@@ -843,7 +944,7 @@ func TestValidateServerAssets(t *testing.T) {
 				return out
 			},
 			errors: []any{
-				regexp.MustCompile(`server: asset_path: error occurred decoding the '[\w#/\\]+/locales/en/portal.json' file: invalid character 'o' in literal null \(expecting 'u'\)`),
+				regexp.MustCompile(`server: asset_path: error occurred decoding the '[\w#/.\\-]+/locales/en/portal.json' file: invalid character 'o' in literal null \(expecting 'u'\)`),
 			},
 		},
 	}

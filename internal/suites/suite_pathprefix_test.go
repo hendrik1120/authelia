@@ -37,18 +37,20 @@ func (s *PathPrefixSuite) TestCustomHeaders() {
 func (s *PathPrefixSuite) TestResetPasswordScenario() {
 	suite.Run(s.T(), NewResetPasswordScenario())
 }
+
 func (s *PathPrefixSuite) TestChangePasswordScenario() {
 	suite.Run(s.T(), NewChangePasswordScenario())
 }
 
 func (s *PathPrefixSuite) TestShouldRenderFrontendWithTrailingSlash() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+
 	defer func() {
 		cancel()
 		s.collectCoverage(s.Page)
 		s.collectScreenshot(ctx.Err(), s.Page)
 		s.MustClose()
-		err := s.RodSession.Stop()
+		err := s.Stop()
 		s.Require().NoError(err)
 	}()
 
@@ -65,12 +67,13 @@ func (s *PathPrefixSuite) TestShouldRenderFrontendWithTrailingSlash() {
 
 func (s *PathPrefixSuite) TestShouldRenderFrontendWithoutTrailingSlash() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+
 	defer func() {
 		cancel()
 		s.collectCoverage(s.Page)
 		s.collectScreenshot(ctx.Err(), s.Page)
 		s.MustClose()
-		err := s.RodSession.Stop()
+		err := s.Stop()
 		s.Require().NoError(err)
 	}()
 

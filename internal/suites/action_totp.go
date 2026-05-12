@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/authelia/otp"
-	"github.com/authelia/otp/totp"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/authelia/otp"
+	"github.com/authelia/otp/totp"
 )
 
 type OptionsTOTP struct {
@@ -139,7 +140,7 @@ func (rs *RodSession) doRegisterTOTPAdvanced(t *testing.T, page *rod.Page, inval
 	}
 
 	credential.ValidationOptions = totp.ValidateOpts{
-		Period:    uint(uperiod), //nolint:gosec // This is a test function.
+		Period:    uint(uperiod),
 		Skew:      1,
 		Digits:    otp.Digits(udigits),
 		Algorithm: alg,

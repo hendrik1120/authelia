@@ -5,15 +5,15 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/go-jose/go-jose/v4"
+
 	oauthelia2 "authelia.com/provider/oauth2"
 	"authelia.com/provider/oauth2/token/jwt"
 	"authelia.com/provider/oauth2/x/errorsx"
-	"github.com/go-jose/go-jose/v4"
 
 	"github.com/authelia/authelia/v4/internal/authentication"
 	"github.com/authelia/authelia/v4/internal/authorization"
 	"github.com/authelia/authelia/v4/internal/configuration/schema"
-	"github.com/authelia/authelia/v4/internal/model"
 )
 
 // NewClient creates a new Client.
@@ -33,7 +33,7 @@ func NewClient(config schema.IdentityProvidersOpenIDConnectClient, c *schema.Ide
 		ResponseTypes: config.ResponseTypes,
 		ResponseModes: []oauthelia2.ResponseModeType{},
 
-		ClaimsStrategy: NewCustomClaimsStrategy(config, c.Scopes, c.ClaimsPolicies),
+		ClaimsStrategy: NewCustomClaimsStrategyFromClient(config, c.Scopes, c.ClaimsPolicies),
 
 		RequirePKCE:                config.RequirePKCE || config.PKCEChallengeMethod != "",
 		RequirePKCEChallengeMethod: config.PKCEChallengeMethod != "",
@@ -228,7 +228,7 @@ func (c *RegisteredClient) GetAuthorizationSignedResponseKeyID() (kid string) {
 // GetAuthorizationSignedResponseAlg returns the AuthorizationSignedResponseAlg.
 func (c *RegisteredClient) GetAuthorizationSignedResponseAlg() (alg string) {
 	if c.AuthorizationSignedResponseAlg == "" {
-		c.AuthorizationSignedResponseAlg = SigningAlgNone
+		c.AuthorizationSignedResponseAlg = SigningAlgRSAUsingSHA256
 	}
 
 	return c.AuthorizationSignedResponseAlg
@@ -388,7 +388,7 @@ func (c *RegisteredClient) GetUserinfoEncryptedResponseEnc() (enc string) {
 }
 
 // GetIntrospectionSignedResponseKeyID returns the IntrospectionSignedResponseKeyID.
-func (c *RegisteredClient) GetIntrospectionSignedResponseKeyID() (alg string) {
+func (c *RegisteredClient) GetIntrospectionSignedResponseKeyID() (kid string) {
 	return c.IntrospectionSignedResponseKeyID
 }
 
@@ -403,8 +403,7 @@ func (c *RegisteredClient) GetIntrospectionSignedResponseAlg() (alg string) {
 
 // GetIntrospectionEncryptedResponseKeyID returns the specific key identifier used to satisfy JWE requirements for
 // OAuth 2.0 JWT introspection response specifications. If unspecified the other available parameters will be
-//
-//	// utilized to select an appropriate key.
+// utilized to select an appropriate key.
 func (c *RegisteredClient) GetIntrospectionEncryptedResponseKeyID() (kid string) {
 	return c.IntrospectionEncryptedResponseKeyID
 }
@@ -507,7 +506,7 @@ func (c *RegisteredClient) GetPushedAuthorizationRequestEndpointAuthSigningAlg()
 // GetEnableJWTProfileOAuthAccessTokens returns true if this client is configured to return the
 // RFC9068 JWT Profile for OAuth 2.0 Access Tokens.
 func (c *RegisteredClient) GetEnableJWTProfileOAuthAccessTokens() (enable bool) {
-	return c.GetAccessTokenSignedResponseAlg() != SigningAlgNone || len(c.GetAccessTokenSignedResponseKeyID()) > 0
+	return c.GetAccessTokenSignedResponseAlg() != SigningAlgNone && len(c.GetAccessTokenSignedResponseKeyID()) > 0
 }
 
 // GetRequirePushedAuthorizationRequests should return true if this client MUST use a Pushed Authorization Request.
@@ -537,18 +536,16 @@ func (c *RegisteredClient) GetPKCEChallengeMethod() (method string) {
 }
 
 // GetConsentResponseBody returns the proper consent response body for this session.OIDCWorkflowSession.
-func (c *RegisteredClient) GetConsentResponseBody(consent *model.OAuth2ConsentSession, form url.Values) ConsentGetResponseBody {
+func (c *RegisteredClient) GetConsentResponseBody(session RequesterFormSession, form url.Values, authTime time.Time, disablePreConf bool) ConsentGetResponseBody {
 	body := ConsentGetResponseBody{
 		ClientID:          c.ID,
 		ClientDescription: c.Name,
-		PreConfiguration:  c.ConsentPolicy.Mode == ClientConsentModePreConfigured,
-		Claims:            []string{},
-		EssentialClaims:   []string{},
+		PreConfiguration:  c.ConsentPolicy.Mode == ClientConsentModePreConfigured && !disablePreConf,
 	}
 
-	if consent != nil {
-		body.Scopes = consent.RequestedScopes
-		body.Audience = consent.RequestedAudience
+	if session != nil {
+		body.Scopes = session.GetRequestedScopes()
+		body.Audience = session.GetRequestedAudience()
 
 		var (
 			claims *ClaimsRequests
@@ -556,12 +553,20 @@ func (c *RegisteredClient) GetConsentResponseBody(consent *model.OAuth2ConsentSe
 		)
 
 		if form == nil {
-			form, _ = consent.GetForm()
+			if form, err = session.GetForm(); err != nil {
+				return body
+			}
 		}
 
 		if form != nil {
 			if claims, err = NewClaimRequests(form); err == nil {
 				body.Claims, body.EssentialClaims = claims.ToSlices()
+			}
+
+			body.RequireLogin = RequestFormRequiresLogin(form, session.GetRequestedAt(), authTime)
+
+			if body.PreConfiguration && FormRequiresExplicitConsent(form) {
+				body.PreConfiguration = false
 			}
 		}
 	}
@@ -737,12 +742,12 @@ func (c *RegisteredClient) GetEffectiveLifespan(gt oauthelia2.GrantType, tt oaut
 		default:
 			return fallback
 		}
-	case oauthelia2.AuthorizeCode:
+	case oauthelia2.RefreshToken:
 		switch {
-		case gtl.AuthorizeCode > durationZero:
-			return gtl.AuthorizeCode
-		case c.Lifespans.AuthorizeCode > durationZero:
-			return c.Lifespans.AuthorizeCode
+		case gtl.RefreshToken > durationZero:
+			return gtl.RefreshToken
+		case c.Lifespans.RefreshToken > durationZero:
+			return c.Lifespans.RefreshToken
 		default:
 			return fallback
 		}
@@ -755,12 +760,12 @@ func (c *RegisteredClient) GetEffectiveLifespan(gt oauthelia2.GrantType, tt oaut
 		default:
 			return fallback
 		}
-	case oauthelia2.RefreshToken:
+	case oauthelia2.AuthorizeCode:
 		switch {
-		case gtl.RefreshToken > durationZero:
-			return gtl.RefreshToken
-		case c.Lifespans.RefreshToken > durationZero:
-			return c.Lifespans.RefreshToken
+		case gtl.AuthorizeCode > durationZero:
+			return gtl.AuthorizeCode
+		case c.Lifespans.AuthorizeCode > durationZero:
+			return c.Lifespans.AuthorizeCode
 		default:
 			return fallback
 		}
@@ -773,6 +778,8 @@ func (c *RegisteredClient) getGrantTypeLifespan(gt oauthelia2.GrantType) (gtl sc
 	switch gt {
 	case oauthelia2.GrantTypeAuthorizationCode:
 		return c.Lifespans.Grants.AuthorizeCode
+	case oauthelia2.GrantTypeDeviceCode:
+		return c.Lifespans.Grants.DeviceCode
 	case oauthelia2.GrantTypeImplicit:
 		return c.Lifespans.Grants.Implicit
 	case oauthelia2.GrantTypeClientCredentials:

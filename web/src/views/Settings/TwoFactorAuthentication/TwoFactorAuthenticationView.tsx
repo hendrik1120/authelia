@@ -1,23 +1,22 @@
-import React, { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Paper, Typography } from "@mui/material";
-import Grid from "@mui/material/Grid2";
+import Grid from "@mui/material/Grid";
 import { useTranslation } from "react-i18next";
 
 import { useLocalStorageMethodContext } from "@contexts/LocalStorageMethodContext";
+import { useNotifications } from "@contexts/NotificationsContext";
 import { useConfiguration } from "@hooks/Configuration";
-import { useNotifications } from "@hooks/NotificationsContext";
 import { useUserInfoPOST } from "@hooks/UserInfo";
 import { useUserInfoTOTPConfigurationOptional } from "@hooks/UserInfoTOTPConfiguration";
 import { useUserWebAuthnCredentials } from "@hooks/WebAuthnCredentials";
 import { SecondFactorMethod } from "@models/Methods";
 import OneTimePasswordPanel from "@views/Settings/TwoFactorAuthentication/OneTimePasswordPanel";
 import TwoFactorAuthenticationOptionsPanel from "@views/Settings/TwoFactorAuthentication/TwoFactorAuthenticationOptionsPanel";
+import WebAuthnCredentialsDisabledPanel from "@views/Settings/TwoFactorAuthentication/WebAuthnCredentialsDisabledPanel";
 import WebAuthnCredentialsPanel from "@views/Settings/TwoFactorAuthentication/WebAuthnCredentialsPanel";
 
-interface Props {}
-
-const TwoFactorAuthenticationView = function (props: Props) {
+const TwoFactorAuthenticationView = function () {
     const { t: translate } = useTranslation("settings");
 
     const [refreshState, setRefreshState] = useState(0);
@@ -28,11 +27,12 @@ const TwoFactorAuthenticationView = function (props: Props) {
     const [configuration, fetchConfiguration, , fetchConfigurationError] = useConfiguration();
     const [userInfo, fetchUserInfo, , fetchUserInfoError] = useUserInfoPOST();
     const [userTOTPConfig, fetchUserTOTPConfig, , fetchUserTOTPConfigError] = useUserInfoTOTPConfigurationOptional();
-    const { setLocalStorageMethod, localStorageMethodAvailable } = useLocalStorageMethodContext();
+    const { localStorageMethodAvailable, setLocalStorageMethod } = useLocalStorageMethodContext();
     const [userWebAuthnCredentials, fetchUserWebAuthnCredentials, , fetchUserWebAuthnCredentialsError] =
         useUserWebAuthnCredentials();
-    const [hasTOTP, setHasTOTP] = useState(false);
-    const [hasWebAuthn, setHasWebAuthn] = useState(false);
+
+    const hasTOTP = userInfo?.has_totp ?? false;
+    const hasWebAuthn = userInfo?.has_webauthn ?? false;
 
     const handleRefreshWebAuthnState = () => {
         setRefreshState((refreshState) => refreshState + 1);
@@ -43,6 +43,9 @@ const TwoFactorAuthenticationView = function (props: Props) {
         setRefreshState((refreshState) => refreshState + 1);
         setRefreshTOTPState((refreshTOTPState) => refreshTOTPState + 1);
     };
+
+    const enabledWebAuthn = configuration?.available_methods.has(SecondFactorMethod.WebAuthn);
+    const enabledTOTP = configuration?.available_methods.has(SecondFactorMethod.TOTP);
 
     useEffect(() => {
         fetchConfiguration();
@@ -56,26 +59,20 @@ const TwoFactorAuthenticationView = function (props: Props) {
     }, [configuration, localStorageMethodAvailable, setLocalStorageMethod]);
 
     useEffect(() => {
-        if (userInfo === undefined) {
+        if (!enabledTOTP) {
             return;
         }
 
-        if (userInfo.has_webauthn !== hasWebAuthn) {
-            setHasWebAuthn(userInfo.has_webauthn);
-        }
-
-        if (userInfo.has_totp !== hasTOTP) {
-            setHasTOTP(userInfo.has_totp);
-        }
-    }, [hasTOTP, hasWebAuthn, userInfo]);
-
-    useEffect(() => {
         fetchUserTOTPConfig();
-    }, [fetchUserTOTPConfig, hasTOTP, refreshTOTPState]);
+    }, [enabledTOTP, fetchUserTOTPConfig, hasTOTP, refreshTOTPState]);
 
     useEffect(() => {
+        if (!enabledWebAuthn) {
+            return;
+        }
+
         fetchUserWebAuthnCredentials();
-    }, [fetchUserWebAuthnCredentials, hasWebAuthn, refreshWebAuthnState]);
+    }, [enabledWebAuthn, fetchUserWebAuthnCredentials, hasWebAuthn, refreshWebAuthnState]);
 
     useEffect(() => {
         if (fetchConfigurationError) {
@@ -124,54 +121,54 @@ const TwoFactorAuthenticationView = function (props: Props) {
             return false;
         }
 
-        const hasAvailableMethods =
-            configuration.available_methods.has(SecondFactorMethod.TOTP) ||
-            configuration.available_methods.has(SecondFactorMethod.WebAuthn);
+        const hasAvailableMethods = enabledTOTP || enabledWebAuthn;
 
         return !hasAvailableMethods;
     };
 
     return (
-        <Fragment>
-            <Grid container spacing={2}>
-                {renderSecondFactorDisabled() ? (
-                    <Grid size={{ xs: 12 }} display="flex" justifyContent="center" alignItems="center">
-                        <Paper>
-                            <Typography variant={"h6"} sx={{ p: 6 }} text-align="center">
-                                {translate("There are no protected applications that require a second factor method")}
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                ) : null}
-                {configuration?.available_methods.has(SecondFactorMethod.TOTP) ? (
-                    <Grid size={{ xs: 12 }}>
-                        <OneTimePasswordPanel
-                            info={userInfo}
-                            config={userTOTPConfig}
-                            handleRefreshState={handleRefreshTOTPState}
-                        />
-                    </Grid>
-                ) : null}
-                {configuration?.available_methods.has(SecondFactorMethod.WebAuthn) ? (
-                    <Grid size={{ xs: 12 }}>
+        <Grid container spacing={2}>
+            {renderSecondFactorDisabled() ? (
+                <Grid size={{ xs: 12 }} display="flex" justifyContent="center" alignItems="center">
+                    <Paper>
+                        <Typography variant={"h6"} sx={{ p: 6 }} text-align="center">
+                            {translate("There are no protected applications that require a second factor method")}
+                        </Typography>
+                    </Paper>
+                </Grid>
+            ) : null}
+            {!renderSecondFactorDisabled() && enabledTOTP ? (
+                <Grid size={{ xs: 12 }}>
+                    <OneTimePasswordPanel
+                        info={userInfo}
+                        config={userTOTPConfig}
+                        handleRefreshState={handleRefreshTOTPState}
+                    />
+                </Grid>
+            ) : null}
+            {!renderSecondFactorDisabled() || enabledWebAuthn ? (
+                <Grid size={{ xs: 12 }}>
+                    {enabledWebAuthn ? (
                         <WebAuthnCredentialsPanel
                             info={userInfo}
                             credentials={userWebAuthnCredentials}
                             handleRefreshState={handleRefreshWebAuthnState}
                         />
-                    </Grid>
-                ) : null}
-                {configuration && userInfo ? (
-                    <Grid size={{ xs: 12 }}>
-                        <TwoFactorAuthenticationOptionsPanel
-                            config={configuration}
-                            info={userInfo}
-                            refresh={handleRefreshUserInfo}
-                        />
-                    </Grid>
-                ) : undefined}
-            </Grid>
-        </Fragment>
+                    ) : (
+                        <WebAuthnCredentialsDisabledPanel />
+                    )}
+                </Grid>
+            ) : null}
+            {configuration && userInfo ? (
+                <Grid size={{ xs: 12 }}>
+                    <TwoFactorAuthenticationOptionsPanel
+                        config={configuration}
+                        info={userInfo}
+                        refresh={handleRefreshUserInfo}
+                    />
+                </Grid>
+            ) : null}
+        </Grid>
     );
 };
 

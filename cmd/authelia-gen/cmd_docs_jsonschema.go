@@ -9,8 +9,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/authelia/jsonschema"
 	"github.com/spf13/cobra"
+
+	"github.com/authelia/jsonschema"
 
 	"github.com/authelia/authelia/v4/internal/authentication"
 	"github.com/authelia/authelia/v4/internal/configuration/schema"
@@ -339,6 +340,11 @@ func getJSONSchemaOutputPath(cmd *cobra.Command, flag string) (dir, file string,
 
 func jsonschemaKoanfMapper(t reflect.Type) *jsonschema.Schema {
 	switch t.String() {
+	case "*language.Tag", "language.Tag":
+		return &jsonschema.Schema{
+			Type:    jsonschema.TypeString,
+			Pattern: `^[a-z]{2}-[A-Z]{2}$`,
+		}
 	case "[]*net.IPNet":
 		return &jsonschema.Schema{
 			OneOf: []*jsonschema.Schema{
@@ -363,7 +369,7 @@ func jsonschemaKoanfMapper(t reflect.Type) *jsonschema.Schema {
 			OneOf: []*jsonschema.Schema{
 				{
 					Type:    jsonschema.TypeString,
-					Pattern: `^\d+\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\s*\d+\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$`,
+					Pattern: `^\d+\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?))(\s*(\s+and\s+)?\d+\s*(y|M|w|d|h|m|s|ms|((year|month|week|day|hour|minute|second|millisecond)s?)))*$`,
 				},
 				{
 					Type:        jsonschema.TypeInteger,
@@ -407,7 +413,7 @@ func jsonschemaKoanfMapper(t reflect.Type) *jsonschema.Schema {
 	case "schema.CSPTemplate":
 		return &jsonschema.Schema{
 			Type:    jsonschema.TypeString,
-			Default: buildCSP(codeCSPProductionDefaultSrc, codeCSPValuesCommon, codeCSPValuesProduction),
+			Default: buildCSP(codeCSPSelf, codeCSPValuesCommon, codeCSPValuesProduction),
 		}
 	}
 

@@ -2,7 +2,7 @@
 title: "SWAG"
 description: "An integration guide for Authelia and the SWAG reverse proxy"
 summary: "A guide on integrating Authelia with SWAG."
-date: 2022-06-15T17:51:47+10:00
+date: 2024-03-14T06:00:14+11:00
 draft: false
 images: []
 weight: 351
@@ -44,7 +44,13 @@ bootstrapping *Authelia*.
 
 [SWAG] supports the required [NGINX](nginx.md#requirements) requirements for __Authelia__ out-of-the-box.
 
-### Trusted Proxies
+## Trusted Proxies and Integration Security
+
+{{< callout context="danger" title="Security Note" icon="outline/alert-octagon" >}}
+In addition to this section which is important to read, you should read the
+[Validating Forwarded Authentication](../../reference/guides/validating-forwarded-authentication.md) reference guide
+and perform the validation steps as part of your regular security validation routine when using this integration.
+{{< /callout >}}
 
 *__Important:__ You should read the [Forwarded Headers] section and this section as part of any proxy configuration.
 Especially if you have never read it before.*
@@ -107,7 +113,8 @@ services:
     restart: 'unless-stopped'
     networks:
       net:
-        aliases: []
+        aliases:
+          - '{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}'
     ports:
       - '80:80'
       - '443:443'
@@ -122,8 +129,6 @@ services:
       URL: '{{< sitevar name="domain" nojs="example.com" >}}'
       SUBDOMAINS: 'www,whoami,auth,organizr'
       VALIDATION: 'http'
-      CERTPROVIDER: 'cloudflare'
-      ONLY_SUBDOMAINS: 'false'
       STAGING: 'true'
     cap_add:
       - 'NET_ADMIN'
@@ -132,8 +137,7 @@ services:
     image: 'authelia/authelia'
     restart: 'unless-stopped'
     networks:
-      net:
-        aliases: []
+      net: {}
     volumes:
       - '${PWD}/data/authelia/config:/config'
     environment:
@@ -143,8 +147,7 @@ services:
     image: 'organizr/organizr'
     restart: 'unless-stopped'
     networks:
-      net:
-        aliases: []
+      net: {}
     volumes:
       - '${PWD}/data/organizr/config:/config'
     environment:
@@ -156,8 +159,7 @@ services:
     image: 'docker.io/traefik/whoami'
     restart: 'unless-stopped'
     networks:
-      net:
-        aliases: []
+      net: {}
     environment:
       TZ: 'Australia/Melbourne'
 ...
@@ -166,66 +168,20 @@ services:
 ### Configuration Options
 
 There are two configuration options for [SWAG]. The recommended option is
-[Adjusting the Default Configuration](#option-1-adjusting-the-default-configuration)
+[Using the Default Configuration](#option-1-using-the-default-configuration).
 
-### Option 1: Adjusting the Default Configuration
-
-The first option requires some minor adjustments to be made and is the recommended option.
-
-#### Adjust authelia-server.conf
-
-The generated `authelia-server.conf` includes the `proxy_pass http://$upstream_authelia:{{< sitevar name="port" nojs="9091" >}};` directive in two location
-blocks, we recommend adjusting these locations so they include the part of the location match after the `/authelia` part
-for example in the `location = /authelia/api/verify` set the directive to
-`proxy_pass http://$upstream_authelia:{{< sitevar name="port" nojs="9091" >}}/api/verify;` and the `location = /authelia/api/authz/auth-request` set the
-directive to `proxy_pass http://$upstream_authelia:{{< sitevar name="port" nojs="9091" >}}/api/authz/auth-request;`. See the below example.
-
-```nginx
-# location for authelia 4.37 and below auth requests
-location = /authelia/api/verify {
-    internal;
-
-    include /config/nginx/proxy.conf;
-    include /config/nginx/resolver.conf;
-    set $upstream_authelia authelia;
-    proxy_pass http://$upstream_authelia:{{< sitevar name="port" nojs="9091" >}}/api/verify;
-
-    ## Include the Set-Cookie header if present
-    auth_request_set $set_cookie $upstream_http_set_cookie;
-    add_header Set-Cookie $set_cookie;
-
-    proxy_pass_request_body off;
-    proxy_set_header Content-Length "";
-}
-
-# location for authelia 4.38 and above auth requests
-location = /authelia/api/authz/auth-request {
-    internal;
-
-    include /config/nginx/proxy.conf;
-    include /config/nginx/resolver.conf;
-    set $upstream_authelia authelia;
-    proxy_pass http://$upstream_authelia:{{< sitevar name="port" nojs="9091" >}}/api/authz/auth-request;
-
-    ## Include the Set-Cookie header if present
-    auth_request_set $set_cookie $upstream_http_set_cookie;
-    add_header Set-Cookie $set_cookie;
-
-    proxy_pass_request_body off;
-    proxy_set_header Content-Length "";
-}
-```
+### Option 1: Using the Default Configuration
 
 #### Configure Authelia Site Configuration
 
-1. In the `/config/nginx/site-confs/` directory copy `authelia.subdomain.conf.sample` to `authelia.subdomain.conf`.
+1. In the `/config/nginx/proxy-confs/` directory copy `authelia.subdomain.conf.sample` to `authelia.subdomain.conf`.
 2. Edit `authelia.subdomain.conf` and adjust `server_name authelia.*;` to be `server_name auth.*;`.
 
 #### Configure Organizr Site Configuration
 
-We're using Organizr as an example application for this example.
+We're using Organizr as an example application.
 
-1. In the `/config/nginx/site-confs/` directory copy `organizr.subdomain.conf.sample` to `organizr.subdomain.conf`.
+1. In the `/config/nginx/proxy-confs/` directory copy `organizr.subdomain.conf.sample` to `organizr.subdomain.conf`.
 2. Edit `organizr.subdomain.conf` and remove the leading `#` (i.e. uncomment) the
 3. `#include /config/nginx/authelia-server.conf;` line and the `#include /config/nginx/authelia-location.conf;` line.
 

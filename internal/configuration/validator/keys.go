@@ -19,8 +19,8 @@ func ValidateKeys(keys, remapped []string, prefix string, validator *schema.Stru
 	for _, key := range schema.Keys {
 		pattern, _ := NewKeyPattern(key)
 
-		switch {
-		case pattern == nil:
+		switch pattern {
+		case nil:
 			continue
 		default:
 			patterns = append(patterns, pattern)
@@ -115,7 +115,7 @@ func NewKeyMapPattern(key string) (pattern *regexp.Regexp, err error) {
 		}
 
 		if i < n {
-			buf.WriteString("\\.[a-zA-Z0-9](([a-zA-Z0-9/_-]+)?[a-zA-Z0-9])?")
+			buf.WriteString("\\.[a-zA-Z0-9](([a-zA-Z0-9/_.:~-]+)?[a-zA-Z0-9])?")
 		}
 	}
 

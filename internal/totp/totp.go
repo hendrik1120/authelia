@@ -18,8 +18,8 @@ func NewTimeBasedProvider(config schema.TOTP) (provider *TimeBased) {
 		issuer:    config.Issuer,
 		algorithm: config.DefaultAlgorithm,
 		digits:    uint32(config.DefaultDigits), //nolint:gosec // Validated at runtime.
-		period:    uint(config.DefaultPeriod),   //nolint:gosec // Validated at runtime.
-		size:      uint(config.SecretSize),      //nolint:gosec // Validated at runtime.
+		period:    uint(config.DefaultPeriod),
+		size:      uint(config.SecretSize),
 	}
 
 	if config.Skew != nil && *config.Skew >= 0 {
@@ -82,7 +82,7 @@ func (p TimeBased) GenerateCustom(ctx Context, username, algorithm, secret strin
 	}
 
 	if key, err = totp.Generate(opts); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error generating totp: %w", err)
 	}
 
 	config = &model.TOTPConfiguration{

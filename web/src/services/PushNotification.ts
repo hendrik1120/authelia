@@ -7,18 +7,29 @@ import { Get, PostWithOptionalResponse, PostWithOptionalResponseRateLimited } fr
 
 interface CompletePushSignInBody {
     targetURL?: string;
-    workflow?: string;
-    workflowID?: string;
+    flowID?: string;
+    flow?: string;
+    subflow?: string;
+    userCode?: string;
 }
 
-export function completePushNotificationSignIn(targetURL?: string, workflow?: string, workflowID?: string) {
+export function completePushNotificationSignIn(
+    targetURL?: string,
+    flowID?: string,
+    flow?: string,
+    subflow?: string,
+    userCode?: string,
+    signal?: AbortSignal,
+) {
     const body: CompletePushSignInBody = {
-        targetURL: targetURL,
-        workflow: workflow,
-        workflowID: workflowID,
+        flow,
+        flowID,
+        subflow,
+        targetURL,
+        userCode,
     };
 
-    return PostWithOptionalResponseRateLimited<DuoSignInResponse>(CompletePushNotificationSignInPath, body);
+    return PostWithOptionalResponseRateLimited<DuoSignInResponse>(CompletePushNotificationSignInPath, body, signal);
 }
 
 export interface DuoSignInResponse {
@@ -32,6 +43,8 @@ export interface DuoDevicesGetResponse {
     result: string;
     devices: DuoDevice[];
     enroll_url: string;
+    preferred_device?: string;
+    preferred_method?: string;
 }
 
 export interface DuoDevice {
@@ -40,8 +53,12 @@ export interface DuoDevice {
     capabilities: string[];
 }
 
-export async function initiateDuoDeviceSelectionProcess() {
-    return Get<DuoDevicesGetResponse>(InitiateDuoDeviceSelectionPath);
+export async function initiateDuoDeviceSelectionProcess(signal?: AbortSignal) {
+    return Get<DuoDevicesGetResponse>(InitiateDuoDeviceSelectionPath, signal);
+}
+
+export async function getPreferredDuoDevice(signal?: AbortSignal) {
+    return Get<DuoDevicesGetResponse>(CompletePushNotificationSignInPath, signal);
 }
 
 export interface DuoDevicePostRequest {
@@ -49,6 +66,10 @@ export interface DuoDevicePostRequest {
     method: string;
 }
 
-export async function completeDuoDeviceSelectionProcess(device: DuoDevicePostRequest) {
-    return PostWithOptionalResponse(CompleteDuoDeviceSelectionPath, { device: device.device, method: device.method });
+export async function completeDuoDeviceSelectionProcess(device: DuoDevicePostRequest, signal?: AbortSignal) {
+    return PostWithOptionalResponse(
+        CompleteDuoDeviceSelectionPath,
+        { device: device.device, method: device.method },
+        signal,
+    );
 }

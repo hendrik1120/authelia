@@ -1,8 +1,7 @@
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
 
-import { Button, Dialog, DialogActions, DialogContent, Theme, Typography, useTheme } from "@mui/material";
-import Grid from "@mui/material/Grid2";
-import makeStyles from "@mui/styles/makeStyles";
+import { Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import { useTranslation } from "react-i18next";
 
 import FingerTouchIcon from "@components/FingerTouchIcon";
@@ -16,20 +15,18 @@ export interface Props {
     webauthn: boolean;
 
     onClose: () => void;
-    onClick: (method: SecondFactorMethod) => void;
+    onClick: (_method: SecondFactorMethod) => void;
 }
 
 const MethodSelectionDialog = function (props: Props) {
-    const styles = useStyles();
-    const theme = useTheme();
     const { t: translate } = useTranslation();
-
+    const theme = useTheme();
     const pieChartIcon = (
         <TimerIcon width={24} height={24} period={15} color={theme.palette.primary.main} backgroundColor={"white"} />
     );
 
     return (
-        <Dialog open={props.open} className={styles.root} onClose={props.onClose}>
+        <Dialog open={props.open} sx={{ textAlign: "center" }} onClose={props.onClose}>
             <DialogContent>
                 <Grid container justifyContent="center" spacing={1} id="methods-dialog">
                     {props.methods.has(SecondFactorMethod.TOTP) ? (
@@ -67,52 +64,35 @@ const MethodSelectionDialog = function (props: Props) {
     );
 };
 
-export default MethodSelectionDialog;
-
-const useStyles = makeStyles((theme: Theme) => ({
-    root: {
-        textAlign: "center",
-    },
-}));
-
 interface MethodItemProps {
-    id: string;
-    method: string;
-    icon: ReactNode;
+    readonly id: string;
+    readonly method: string;
+    readonly icon: ReactNode;
 
-    onClick: () => void;
+    readonly onClick: () => void;
 }
 
 function MethodItem(props: MethodItemProps) {
-    const style = makeStyles((theme: Theme) => ({
-        item: {
-            paddingTop: theme.spacing(4),
-            paddingBottom: theme.spacing(4),
-            width: "100%",
-        },
-        icon: {
-            display: "inline-block",
-            fill: "white",
-        },
-        buttonRoot: {
-            display: "block",
-        },
-    }))();
-
     return (
         <Grid size={{ xs: 12 }} className="method-option" id={props.id}>
             <Button
-                className={style.item}
+                sx={{
+                    display: "block",
+                    paddingBottom: (theme) => theme.spacing(4),
+                    paddingTop: (theme) => theme.spacing(4),
+                    width: "100%",
+                }}
                 color="primary"
-                classes={{ root: style.buttonRoot }}
                 variant="contained"
                 onClick={props.onClick}
             >
-                <div className={style.icon}>{props.icon}</div>
-                <div>
+                <Box sx={{ display: "inline-block", fill: "white" }}>{props.icon}</Box>
+                <Box>
                     <Typography>{props.method}</Typography>
-                </div>
+                </Box>
             </Button>
         </Grid>
     );
 }
+
+export default MethodSelectionDialog;
